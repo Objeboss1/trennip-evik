@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="et">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>trennipäevik</title>
+  </head>
+  <body>
+    <main>
+      <h1>trennipäevik</h1>
+      <p id="now" class="now"></p>
+      <section id="calendar" class="calendar" aria-labelledby="month-label">
+        <div class="calendar-nav">
+          <button type="button" data-nav="prev">Eelmine kuu</button>
+          <h2 id="month-label"></h2>
+          <button type="button" data-nav="next">Järgmine kuu</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Esmas&shy;päev</th>
+              <th scope="col">Teisi&shy;päev</th>
+              <th scope="col">Kolma&shy;päev</th>
+              <th scope="col">Nelja&shy;päev</th>
+              <th scope="col">Reede</th>
+              <th scope="col">Lau&shy;päev</th>
+              <th scope="col">Püha&shy;päev</th>
+            </tr>
+          </thead>
+          <tbody id="days"></tbody>
+        </table>
+      </section>
+      <button type="button" class="plan-open" id="plan-open">Treeningkava</button>
+      <div id="plan-cells" class="plan-cells" hidden></div>
+      <h2 class="muscles-title">Lihased</h2>
+      <section class="body-views" aria-label="Keha">
+        <figure>
+          <div class="shot" data-view="eest">
+            <img src="/eest.png?v=2" alt="Eest" />
+            <button type="button" class="spot" data-spot="eest-olad" style="top: 17%; left: 34%" data-muscle="Õlad" title="Õlad" aria-label="Õlad"></button>
+            <button type="button" class="spot" data-spot="eest-rind" style="top: 23%; left: 50%" data-muscle="Rind" title="Rind" aria-label="Rind"></button>
+            <button type="button" class="spot" data-spot="eest-biitseps" style="top: 29%; left: 20%" data-muscle="Biitseps" title="Biitseps" aria-label="Biitseps"></button>
+            <button type="button" class="spot" data-spot="eest-kuunarvars" style="top: 38%; left: 16%" data-muscle="Küünarvars" title="Küünarvars" aria-label="Küünarvars"></button>
+            <button type="button" class="spot" data-spot="eest-kohu" style="top: 33%; left: 50%" data-muscle="Kõhulihased" title="Kõhulihased" aria-label="Kõhulihased"></button>
+            <button type="button" class="spot" data-spot="eest-kulg" style="top: 34%; left: 40%" data-muscle="Küljelihased" title="Küljelihased" aria-label="Küljelihased"></button>
+            <button type="button" class="spot" data-spot="eest-neli" style="top: 55%; left: 40%" data-muscle="Nelipealihas" title="Nelipealihas" aria-label="Nelipealihas"></button>
+            <button type="button" class="spot" data-spot="eest-lahend" style="top: 60%; left: 47%" data-muscle="Lähendajad" title="Lähendajad" aria-label="Lähendajad"></button>
+            <button type="button" class="spot" data-spot="eest-saar" style="top: 78%; left: 38%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
+          </div>
+          <figcaption>Eest</figcaption>
+        </figure>
+        <figure>
+          <div class="shot" data-view="tagant">
+            <img src="/tagant.png?v=2" alt="Tagant" />
+            <button type="button" class="spot" data-spot="tagant-trapeets" style="top: 14%; left: 50%" data-muscle="Trapeets" title="Trapeets" aria-label="Trapeets"></button>
+            <button type="button" class="spot" data-spot="tagant-selg" style="top: 28%; left: 40%" data-muscle="Seljalihas" title="Seljalihas" aria-label="Seljalihas"></button>
+            <button type="button" class="spot" data-spot="tagant-triitseps" style="top: 30%; left: 80%" data-muscle="Triitseps" title="Triitseps" aria-label="Triitseps"></button>
+            <button type="button" class="spot" data-spot="tagant-alaselg" style="top: 38%; left: 50%" data-muscle="Alaselg" title="Alaselg" aria-label="Alaselg"></button>
+            <button type="button" class="spot" data-spot="tagant-tuhar" style="top: 46%; left: 42%" data-muscle="Tuhar" title="Tuhar" aria-label="Tuhar"></button>
+            <button type="button" class="spot" data-spot="tagant-reie" style="top: 60%; left: 40%" data-muscle="Reie tagakülg" title="Reie tagakülg" aria-label="Reie tagakülg"></button>
+            <button type="button" class="spot" data-spot="tagant-saar" style="top: 78%; left: 40%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
+          </div>
+          <figcaption>Tagant</figcaption>
+        </figure>
+        <figure>
+          <div class="shot" data-view="korvalt">
+            <img src="/korvalt.png?v=2" alt="Kõrvalt" />
+            <button type="button" class="spot" data-spot="korvalt-olad" style="top: 17%; left: 58%" data-muscle="Õlad" title="Õlad" aria-label="Õlad"></button>
+            <button type="button" class="spot" data-spot="korvalt-rind" style="top: 24%; left: 62%" data-muscle="Rind" title="Rind" aria-label="Rind"></button>
+            <button type="button" class="spot" data-spot="korvalt-kohu" style="top: 34%; left: 55%" data-muscle="Kõhulihased" title="Kõhulihased" aria-label="Kõhulihased"></button>
+            <button type="button" class="spot" data-spot="korvalt-neli" style="top: 55%; left: 52%" data-muscle="Nelipealihas" title="Nelipealihas" aria-label="Nelipealihas"></button>
+            <button type="button" class="spot" data-spot="korvalt-saar" style="top: 78%; left: 48%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
+          </div>
+          <figcaption>Kõrvalt</figcaption>
+        </figure>
+      </section>
+      <div class="spot-edit">
+        <button type="button" id="edit-spots">Muuda</button>
+        <div id="spot-tools" class="spot-tools" hidden>
+          <label>
+            Uus ring pildile
+            <select id="spot-view">
+              <option value="eest">Eest</option>
+              <option value="tagant">Tagant</option>
+              <option value="korvalt">Kõrvalt</option>
+            </select>
+          </label>
+          <button type="button" id="add-spot">Lisa ring</button>
+          <button type="button" id="save-spots">Salvesta</button>
+        </div>
+      </div>
+      <h2 class="muscles-title">Toitumine</h2>
+      <textarea id="nutrition" class="nutrition" rows="10"></textarea>
+      <div id="muscle" class="modal" hidden>
+        <div class="modal-card muscle-view">
+          <button type="button" class="back" id="muscle-back">Sulge</button>
+          <label>
+            Pealkiri
+            <input id="muscle-title" type="text" />
+          </label>
+          <button type="button" id="delete-open-spot">Kustuta ring</button>
+          <label>
+            Harjutused
+            <textarea id="muscle-exercises" rows="6" placeholder="Kirjuta, milliseid harjutusi teed"></textarea>
+          </label>
+          <label>
+            Mitu korda
+            <input id="muscle-reps" type="text" placeholder="Kirjuta, mitu korda" />
+          </label>
+        </div>
+      </div>
+      <section id="day" class="modal" hidden>
+        <div class="modal-card day-view">
+          <button type="button" class="back" id="back">Sulge</button>
+          <h2 id="day-label"></h2>
+          <div class="choices" role="group" aria-label="Treening">
+            <button type="button" data-choice="Jooksmine">Jooksmine</button>
+            <button type="button" data-choice="Jõusaal">Jõusaal</button>
+            <button type="button" data-choice="Mõlemad">Mõlemad</button>
+            <button type="button" data-choice="Ei käinud">Ei käinud</button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
