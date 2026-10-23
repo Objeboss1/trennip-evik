@@ -7,7 +7,42 @@
     <title>trennipäevik</title>
   </head>
   <body>
-    <main>
+    <section id="auth-gate" class="auth-gate" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <h1 id="auth-title">trennipäevik</h1>
+        <p class="auth-lead">Logi sisse, et näha enda päevikut, harjutusi ja treeningkava.</p>
+        <p id="auth-loading">Kontrollin sisselogimist…</p>
+        <form id="auth-form" hidden>
+          <label>
+            E-post
+            <input id="auth-email" name="email" type="email" autocomplete="username" inputmode="email" required />
+          </label>
+          <label>
+            Parool
+            <input
+              id="auth-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="6"
+              maxlength="72"
+              required
+            />
+          </label>
+          <p id="auth-error" class="auth-error" role="alert" hidden></p>
+          <div class="auth-actions">
+            <button type="submit">Logi sisse</button>
+            <button type="button" id="auth-register">Loo konto</button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <main id="diary" hidden>
+      <div class="account">
+        <p id="save-status" class="save-status" role="status" hidden></p>
+        <span id="account-email"></span>
+        <button type="button" id="logout">Logi välja</button>
+      </div>
       <h1>trennipäevik</h1>
       <p id="now" class="now"></p>
       <section id="calendar" class="calendar" aria-labelledby="month-label">
