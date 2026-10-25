@@ -301,11 +301,17 @@ const gymQuestions = document.querySelector('#gym-questions')
 const runPace = document.querySelector('#run-pace')
 const runAmount = document.querySelector('#run-amount')
 const gymNote = document.querySelector('#gym-note')
-const gymButtons = [...document.querySelectorAll('[data-gym]')]
+const dayChoices = document.querySelector('#day-choices')
 const statsView = document.querySelector('#stats')
 const statsBody = document.querySelector('#stats-body')
-let gymAnswer = ''
 let followStep = 'run'
+
+for (let km = 1; km <= 21; km += 1) {
+  const option = document.createElement('option')
+  option.value = `${km} km`
+  option.textContent = `${km} km`
+  runAmount.append(option)
+}
 
 function selectValue(select, value) {
   if (value && ![...select.options].some((option) => option.value === value)) {
@@ -322,17 +328,14 @@ function fillFollowUp(name, details) {
   const showRun = needsRun(name) && (!both || followStep !== 'gym')
   const showGym = needsGym(name) && (!both || followStep === 'gym')
   dayExtra.hidden = !(showRun || showGym)
+  dayChoices.hidden = showRun || showGym
   runQuestions.hidden = !showRun
   gymQuestions.hidden = !showGym
   if (showRun) {
     selectValue(runPace, details.pace)
     selectValue(runAmount, details.amount)
   }
-  gymAnswer = details.gym
   gymNote.value = showGym ? details.gymNote : ''
-  for (const button of gymButtons) {
-    button.setAttribute('aria-pressed', String(button.dataset.gym === gymAnswer))
-  }
 }
 
 function saveFollowUp() {
@@ -345,7 +348,6 @@ function saveFollowUp() {
     choice: name,
     pace: savingGym ? current.pace : runPace.value,
     amount: savingGym ? current.amount : runAmount.value,
-    gym: savingGym ? gymAnswer : current.gym,
     gymNote: savingGym ? gymNote.value.trim() : current.gymNote,
   }
   saveChoices(choices)
@@ -356,15 +358,6 @@ function saveFollowUp() {
     return
   }
   showCalendar()
-}
-
-for (const button of gymButtons) {
-  button.addEventListener('click', () => {
-    gymAnswer = button.dataset.gym
-    for (const item of gymButtons) {
-      item.setAttribute('aria-pressed', String(item === button))
-    }
-  })
 }
 
 document.querySelector('#day-save').addEventListener('click', saveFollowUp)
@@ -425,7 +418,7 @@ function renderStats() {
     .sort((a, b) => a.key.localeCompare(b.key))
   const achievements = Object.entries(choices)
     .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
-    .filter((entry) => needsGym(entry.choice) && (entry.gym === 'Jah' || entry.gymNote))
+    .filter((entry) => needsGym(entry.choice) && entry.gymNote)
     .sort((a, b) => a.key.localeCompare(b.key))
 
   const distanceBars = runs
@@ -443,10 +436,16 @@ function renderStats() {
       value: paceSeconds(entry.pace),
     }))
 
-  statsBody.replaceChildren(
-    barChart('Kui palju', distanceBars, 'Koguse andmeid veel ei ole.'),
-    barChart('Tempo', paceBars, 'Tempo andmeid veel ei ole.'),
-  )
+  const distanceChart = barChart('Kui palju', distanceBars, 'Koguse andmeid veel ei ole.')
+  if (distanceBars.length) {
+    const total = distanceBars.reduce((sum, item) => sum + item.value, 0)
+    const average = Math.round((total / distanceBars.length) * 10) / 10
+    const line = document.createElement('p')
+    line.className = 'stat-line'
+    line.textContent = `Keskmine: ${Number.isInteger(average) ? average : average.toFixed(1)} km`
+    distanceChart.append(line)
+  }
+  statsBody.replaceChildren(distanceChart, barChart('Tempo 1km kohta', paceBars, 'Tempo andmeid veel ei ole.'))
 
   const gymBlock = document.createElement('section')
   gymBlock.className = 'stat-block'
@@ -463,7 +462,7 @@ function renderStats() {
     list.className = 'achieve-list'
     for (const entry of achievements) {
       const item = document.createElement('li')
-      item.textContent = `${dateLabel(entry.key)}: ${entry.gymNote || 'Jah'}`
+      item.textContent = `${dateLabel(entry.key)}: ${entry.gymNote}`
       list.append(item)
     }
     gymBlock.append(list)
