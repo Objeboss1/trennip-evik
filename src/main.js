@@ -27,6 +27,7 @@ const WEEKDAYS = [
 ]
 
 const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
+const UNANSWERED_DARK_BEFORE = '2026-10-25'
 const STORAGE_KEY = 'treeningpaevik'
 
 const monthLabel = document.querySelector('#month-label')
@@ -108,6 +109,11 @@ function markClass(choice) {
   return ''
 }
 
+function darkClass(key, choice) {
+  if (choice || key >= UNANSWERED_DARK_BEFORE) return ''
+  return ' day-dark'
+}
+
 function render() {
   monthLabel.textContent = `${monthTitle(MONTHS[month])} ${year}`
 
@@ -123,9 +129,11 @@ function render() {
       cells.push('<td class="day-empty"></td>')
     } else {
       const key = dateKey(date)
-      const mark = markClass(choices[key])
+      const choice = choices[key]
+      const mark = markClass(choice)
+      const dark = darkClass(key, choice)
       if (isPast(key)) {
-        cells.push(`<td class="day day-past${mark}">${date}</td>`)
+        cells.push(`<td class="day day-past${mark}${dark}">${date}</td>`)
       } else {
         cells.push(
           `<td class="day${mark}"><button type="button" class="day-button" data-date="${key}">${date}</button></td>`,
