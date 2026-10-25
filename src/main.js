@@ -652,33 +652,36 @@ muscleExercises.addEventListener('input', saveOpenMuscle)
 muscleReps.addEventListener('input', saveOpenMuscle)
 
 const PLAN_KEY = 'treeningpaevik-kava'
+const planPanel = document.querySelector('#plan-panel')
 const planCells = document.querySelector('#plan-cells')
+const planEdit = document.querySelector('#plan-edit')
+const planAddColumn = document.querySelector('#plan-add-column')
 
 const PLAN_ROWS = 10
+let planEditing = false
 
-function emptyPlanColumn() {
+function emptyPlanColumn(rowCount = PLAN_ROWS) {
   return {
     title: '',
-    rows: Array.from({ length: PLAN_ROWS }, () => ({ text: '', reps: '' })),
+    rows: Array.from({ length: rowCount }, () => ({ text: '', reps: '' })),
   }
+}
+
+function normalizeColumn(column) {
+  const source = Array.isArray(column) ? column : column?.rows
+  const title = Array.isArray(column) ? '' : column?.title || ''
+  const rows = Array.isArray(source)
+    ? source.map((row) => ({ text: row?.text || '', reps: row?.reps || '' }))
+    : [{ text: '', reps: '' }]
+  return { title, rows }
 }
 
 function loadPlanCells() {
   const saved = loadJson(PLAN_KEY)
-  if (!Array.isArray(saved) || saved.length !== 3) {
+  if (!Array.isArray(saved)) {
     return [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()]
   }
-  return saved.map((column) => {
-    const source = Array.isArray(column) ? column : column?.rows
-    const title = Array.isArray(column) ? '' : column?.title || ''
-    return {
-      title,
-      rows: Array.from({ length: PLAN_ROWS }, (_, index) => ({
-        text: source?.[index]?.text || '',
-        reps: source?.[index]?.reps || '',
-      })),
-    }
-  })
+  return saved.map(normalizeColumn)
 }
 
 let planCellsData = loadPlanCells()
@@ -690,29 +693,49 @@ function savePlan() {
 
 function renderPlan() {
   planCells.replaceChildren()
+  planCells.style.setProperty('--plan-columns', String(Math.max(planCellsData.length, 1)))
   planCellsData.forEach((column, columnIndex) => {
     const box = document.createElement('div')
     box.className = 'plan-box'
+    const head = document.createElement('div')
+    head.className = 'plan-head'
     const title = document.createElement('input')
     title.type = 'text'
     title.className = 'plan-title'
     title.value = column.title
+    title.readOnly = !planEditing
     title.setAttribute('aria-label', 'Pealkiri')
     title.addEventListener('input', () => {
       planCellsData[columnIndex].title = title.value
       savePlan()
     })
-    box.append(title)
+    head.append(title)
+    if (planEditing) {
+      const removeColumn = document.createElement('button')
+      removeColumn.type = 'button'
+      removeColumn.className = 'plan-remove'
+      removeColumn.textContent = 'Eemalda veerg'
+      removeColumn.addEventListener('click', () => {
+        planCellsData.splice(columnIndex, 1)
+        savePlan()
+        renderPlan()
+      })
+      head.append(removeColumn)
+    }
+    box.append(head)
     column.rows.forEach((row, rowIndex) => {
       const line = document.createElement('div')
       line.className = 'plan-row'
       const text = document.createElement('input')
       text.type = 'text'
       text.value = row.text
+      text.readOnly = !planEditing
+      text.setAttribute('aria-label', 'Harjutus')
       const reps = document.createElement('input')
       reps.type = 'text'
       reps.className = 'plan-reps'
       reps.value = row.reps
+      reps.readOnly = !planEditing
       reps.setAttribute('aria-label', 'Korduste arv')
       text.addEventListener('input', () => {
         planCellsData[columnIndex].rows[rowIndex].text = text.value
@@ -723,15 +746,60 @@ function renderPlan() {
         savePlan()
       })
       line.append(text, reps)
+      if (planEditing) {
+        const removeRow = document.createElement('button')
+        removeRow.type = 'button'
+        removeRow.className = 'plan-remove plan-remove-row'
+        removeRow.textContent = '×'
+        removeRow.setAttribute('aria-label', 'Eemalda rida')
+        removeRow.addEventListener('click', () => {
+          planCellsData[columnIndex].rows.splice(rowIndex, 1)
+          savePlan()
+          renderPlan()
+        })
+        line.append(removeRow)
+      }
       box.append(line)
     })
+    if (planEditing) {
+      const addRow = document.createElement('button')
+      addRow.type = 'button'
+      addRow.className = 'plan-add'
+      addRow.textContent = 'Lisa rida'
+      addRow.addEventListener('click', () => {
+        planCellsData[columnIndex].rows.push({ text: '', reps: '' })
+        savePlan()
+        renderPlan()
+      })
+      box.append(addRow)
+    }
     planCells.append(box)
   })
 }
 
+function setPlanEditing(editing) {
+  planEditing = editing
+  planEdit.textContent = editing ? 'Valmis' : 'Muuda'
+  planEdit.setAttribute('aria-pressed', String(editing))
+  planAddColumn.hidden = !editing
+  if (!planPanel.hidden) renderPlan()
+}
+
 document.querySelector('#plan-open').addEventListener('click', () => {
-  if (planCells.hidden) renderPlan()
-  planCells.hidden = !planCells.hidden
+  const opening = planPanel.hidden
+  planPanel.hidden = !opening
+  if (!opening) setPlanEditing(false)
+  else renderPlan()
+})
+
+planEdit.addEventListener('click', () => {
+  setPlanEditing(!planEditing)
+})
+
+planAddColumn.addEventListener('click', () => {
+  planCellsData.push(emptyPlanColumn(1))
+  savePlan()
+  renderPlan()
 })
 
 const nutrition = document.querySelector('#nutrition')
@@ -766,7 +834,7 @@ function applyDiary(data) {
   if (Array.isArray(data.plan)) {
     localStorage.setItem(PLAN_KEY, JSON.stringify(data.plan))
     planCellsData = loadPlanCells()
-    if (!planCells.hidden) renderPlan()
+    if (!planPanel.hidden) renderPlan()
   }
   if (typeof data.nutrition === 'string') {
     localStorage.setItem('treeningpaevik-toitumine', data.nutrition)
