@@ -267,6 +267,8 @@ document.querySelector('[data-nav="next"]').addEventListener('click', () => {
 days.addEventListener('click', (event) => {
   const button = event.target.closest('[data-date]')
   if (!button || !isToday(button.dataset.date)) return
+  const name = choiceName(choices[button.dataset.date])
+  followStep = needsRun(name) ? 'run' : 'gym'
   showDay(button.dataset.date)
 })
 
@@ -283,10 +285,10 @@ for (const button of choiceButtons) {
       choice: name,
       pace: keepRun ? previous.pace : '',
       amount: keepRun ? previous.amount : '',
-      extra: keepRun ? previous.extra : '',
       gym: keepGym ? previous.gym : '',
       gymNote: keepGym ? previous.gymNote : '',
     }
+    followStep = needsRun(name) ? 'run' : 'gym'
     saveChoices(choices)
     showDay(openKey)
     render()
@@ -298,42 +300,61 @@ const runQuestions = document.querySelector('#run-questions')
 const gymQuestions = document.querySelector('#gym-questions')
 const runPace = document.querySelector('#run-pace')
 const runAmount = document.querySelector('#run-amount')
-const runExtra = document.querySelector('#run-extra')
 const gymNote = document.querySelector('#gym-note')
 const gymButtons = [...document.querySelectorAll('[data-gym]')]
 const statsView = document.querySelector('#stats')
 const statsBody = document.querySelector('#stats-body')
 let gymAnswer = ''
+let followStep = 'run'
+
+function selectValue(select, value) {
+  if (value && ![...select.options].some((option) => option.value === value)) {
+    const option = document.createElement('option')
+    option.value = value
+    option.textContent = value
+    select.append(option)
+  }
+  select.value = value || ''
+}
 
 function fillFollowUp(name, details) {
-  const showRun = needsRun(name)
-  const showGym = needsGym(name)
+  const both = needsRun(name) && needsGym(name)
+  const showRun = needsRun(name) && (!both || followStep !== 'gym')
+  const showGym = needsGym(name) && (!both || followStep === 'gym')
   dayExtra.hidden = !(showRun || showGym)
   runQuestions.hidden = !showRun
   gymQuestions.hidden = !showGym
-  runPace.value = showRun ? details.pace : ''
-  runAmount.value = showRun ? details.amount : ''
-  runExtra.value = showRun ? details.extra : ''
-  gymAnswer = showGym ? details.gym : ''
+  if (showRun) {
+    selectValue(runPace, details.pace)
+    selectValue(runAmount, details.amount)
+  }
+  gymAnswer = details.gym
   gymNote.value = showGym ? details.gymNote : ''
   for (const button of gymButtons) {
     button.setAttribute('aria-pressed', String(button.dataset.gym === gymAnswer))
   }
 }
 
-function saveFollowUp(skip) {
+function saveFollowUp() {
   const name = choiceName(choices[openKey])
   if (!isToday(openKey) || !name) return
+  const both = needsRun(name) && needsGym(name)
+  const savingGym = needsGym(name) && (!both || followStep === 'gym')
+  const current = choiceDetails(choices[openKey])
   choices[openKey] = {
     choice: name,
-    pace: !skip && needsRun(name) ? runPace.value.trim() : '',
-    amount: !skip && needsRun(name) ? runAmount.value.trim() : '',
-    extra: !skip && needsRun(name) ? runExtra.value.trim() : '',
-    gym: !skip && needsGym(name) ? gymAnswer : '',
-    gymNote: !skip && needsGym(name) ? gymNote.value.trim() : '',
+    pace: savingGym ? current.pace : runPace.value,
+    amount: savingGym ? current.amount : runAmount.value,
+    gym: savingGym ? gymAnswer : current.gym,
+    gymNote: savingGym ? gymNote.value.trim() : current.gymNote,
   }
   saveChoices(choices)
   render()
+  if (both && followStep !== 'gym') {
+    followStep = 'gym'
+    fillFollowUp(name, choiceDetails(choices[openKey]))
+    return
+  }
   showCalendar()
 }
 
@@ -346,45 +367,108 @@ for (const button of gymButtons) {
   })
 }
 
-document.querySelector('#day-save').addEventListener('click', () => saveFollowUp(false))
-document.querySelector('#day-skip').addEventListener('click', () => saveFollowUp(true))
+document.querySelector('#day-save').addEventListener('click', saveFollowUp)
 
-function renderStats() {
-  const entries = Object.values(choices).map(choiceDetails).filter((entry) => entry.choice)
-  const count = (name) => entries.filter((entry) => entry.choice === name).length
-  const runs = entries.filter((entry) => needsRun(entry.choice))
-  const gyms = entries.filter((entry) => needsGym(entry.choice))
-  const distance = runs.reduce((sum, entry) => {
-    const match = String(entry.amount).replace(',', '.').match(/(\d+(?:\.\d+)?)/)
-    return match ? sum + Number(match[1]) : sum
-  }, 0)
-  const lines = [
-    ['Märgitud päevi', entries.length],
-    ['Jooksmine', count('Jooksmine')],
-    ['Jõusaal', count('Jõusaal')],
-    ['Mõlemad', count('Mõlemad')],
-    ['Ei käinud', count('Ei käinud')],
-    ['Tempo vastatud', runs.filter((entry) => entry.pace).length],
-    ['Kogus vastatud', runs.filter((entry) => entry.amount).length],
-    ['Veel vastatud', runs.filter((entry) => entry.extra).length],
-    ['Jõusaalis saavutas', gyms.filter((entry) => entry.gym === 'Jah').length],
-    ['Jõusaalis ei saavutanud', gyms.filter((entry) => entry.gym === 'Ei').length],
-  ]
-  if (distance) lines.push(['Kokku joostud', distance])
-  statsBody.replaceChildren()
-  if (!entries.length) {
+function dateLabel(key) {
+  const [, monthNumber, dayNumber] = key.split('-').map(Number)
+  return `${dayNumber}. ${MONTHS[monthNumber - 1]}`
+}
+
+function paceSeconds(pace) {
+  const match = String(pace).match(/(\d+):(\d+)/)
+  if (!match) return 0
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
+function amountNumber(amount) {
+  const match = String(amount).replace(',', '.').match(/(\d+(?:\.\d+)?)/)
+  return match ? Number(match[1]) : 0
+}
+
+function barChart(title, items, emptyText) {
+  const block = document.createElement('section')
+  block.className = 'stat-block'
+  const heading = document.createElement('h3')
+  heading.textContent = title
+  block.append(heading)
+  if (!items.length) {
     const empty = document.createElement('p')
     empty.className = 'stat-line'
-    empty.textContent = 'Veel ei ole ühtegi vastust.'
-    statsBody.append(empty)
-    return
+    empty.textContent = emptyText
+    block.append(empty)
+    return block
   }
-  for (const [label, value] of lines) {
-    const row = document.createElement('p')
-    row.className = 'stat-line'
-    row.textContent = `${label}: ${value}`
-    statsBody.append(row)
+  const max = Math.max(...items.map((item) => item.value))
+  const chart = document.createElement('div')
+  chart.className = 'bar-chart'
+  for (const item of items) {
+    const column = document.createElement('div')
+    column.className = 'bar-col'
+    const value = document.createElement('span')
+    value.textContent = item.text
+    const bar = document.createElement('div')
+    bar.className = 'bar'
+    bar.style.height = `${Math.max(12, (item.value / max) * 100)}%`
+    const label = document.createElement('span')
+    label.textContent = item.label
+    column.append(value, bar, label)
+    chart.append(column)
   }
+  block.append(chart)
+  return block
+}
+
+function renderStats() {
+  const runs = Object.entries(choices)
+    .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
+    .filter((entry) => needsRun(entry.choice))
+    .sort((a, b) => a.key.localeCompare(b.key))
+  const achievements = Object.entries(choices)
+    .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
+    .filter((entry) => needsGym(entry.choice) && (entry.gym === 'Jah' || entry.gymNote))
+    .sort((a, b) => a.key.localeCompare(b.key))
+
+  const distanceBars = runs
+    .filter((entry) => amountNumber(entry.amount))
+    .map((entry) => ({
+      label: dateLabel(entry.key),
+      text: entry.amount,
+      value: amountNumber(entry.amount),
+    }))
+  const paceBars = runs
+    .filter((entry) => paceSeconds(entry.pace))
+    .map((entry) => ({
+      label: dateLabel(entry.key),
+      text: entry.pace,
+      value: paceSeconds(entry.pace),
+    }))
+
+  statsBody.replaceChildren(
+    barChart('Kui palju', distanceBars, 'Koguse andmeid veel ei ole.'),
+    barChart('Tempo', paceBars, 'Tempo andmeid veel ei ole.'),
+  )
+
+  const gymBlock = document.createElement('section')
+  gymBlock.className = 'stat-block'
+  const gymHeading = document.createElement('h3')
+  gymHeading.textContent = 'Jõusaalis saavutasin'
+  gymBlock.append(gymHeading)
+  if (!achievements.length) {
+    const empty = document.createElement('p')
+    empty.className = 'stat-line'
+    empty.textContent = 'Jõusaalis ei ole veel saavutusi.'
+    gymBlock.append(empty)
+  } else {
+    const list = document.createElement('ul')
+    list.className = 'achieve-list'
+    for (const entry of achievements) {
+      const item = document.createElement('li')
+      item.textContent = `${dateLabel(entry.key)}: ${entry.gymNote || 'Jah'}`
+      list.append(item)
+    }
+    gymBlock.append(list)
+  }
+  statsBody.append(gymBlock)
 }
 
 document.querySelector('#stats-open').addEventListener('click', () => {
