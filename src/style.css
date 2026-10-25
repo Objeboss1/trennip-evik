@@ -108,7 +108,8 @@ td {
   font-variant-numeric: tabular-nums;
 }
 
-td.day-past {
+td.day-past,
+td.day-future {
   cursor: default;
 }
 

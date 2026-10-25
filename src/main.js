@@ -65,6 +65,10 @@ function isPast(key) {
   return key < todayStamp
 }
 
+function isToday(key) {
+  return key === todayStamp
+}
+
 function formatNow(date) {
   const weekday = monthTitle(WEEKDAYS[date.getDay()])
   const clock = date.toLocaleTimeString('et-EE', {
@@ -81,7 +85,7 @@ function tick() {
   nowLabel.textContent = formatNow(date)
   if (stamp === todayStamp) return
   todayStamp = stamp
-  if (!dayView.hidden && isPast(openKey)) {
+  if (!dayView.hidden && !isToday(openKey)) {
     for (const button of choiceButtons) button.disabled = true
   }
   if (!calendar.hidden) render()
@@ -132,12 +136,14 @@ function render() {
       const choice = choices[key]
       const mark = markClass(choice)
       const dark = darkClass(key, choice)
-      if (isPast(key)) {
-        cells.push(`<td class="day day-past${mark}${dark}">${date}</td>`)
-      } else {
+      if (isToday(key)) {
         cells.push(
           `<td class="day${mark}"><button type="button" class="day-button" data-date="${key}">${date}</button></td>`,
         )
+      } else if (isPast(key)) {
+        cells.push(`<td class="day day-past${mark}${dark}">${date}</td>`)
+      } else {
+        cells.push(`<td class="day day-future${mark}">${date}</td>`)
       }
     }
     if (index % 7 === 6) cells.push('</tr>')
@@ -155,7 +161,7 @@ function showCalendar() {
 }
 
 function showDay(key) {
-  if (isPast(key)) return
+  if (!isToday(key)) return
   openKey = key
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
@@ -228,7 +234,7 @@ document.querySelector('[data-nav="next"]').addEventListener('click', () => {
 
 days.addEventListener('click', (event) => {
   const button = event.target.closest('[data-date]')
-  if (!button || isPast(button.dataset.date)) return
+  if (!button || !isToday(button.dataset.date)) return
   showDay(button.dataset.date)
 })
 
@@ -236,7 +242,7 @@ document.querySelector('#back').addEventListener('click', showCalendar)
 
 for (const button of choiceButtons) {
   button.addEventListener('click', () => {
-    if (isPast(openKey)) return
+    if (!isToday(openKey)) return
     choices[openKey] = button.dataset.choice
     saveChoices(choices)
     showDay(openKey)
@@ -546,6 +552,7 @@ function pushDiary() {
   }, 300)
 }
 
+todayStamp = stampFromDate(new Date())
 applyDiary(sharedDiary)
 
 fetch('/api/paevik')
@@ -558,7 +565,6 @@ fetch('/api/paevik')
     diaryReady = true
   })
 
-todayStamp = stampFromDate(new Date())
 tick()
 setInterval(tick, 1000)
 render()
