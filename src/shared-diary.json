@@ -1,29 +1,135 @@
 {
-  "choices": {
-    "2026-09-25": "Ei käinud"
-  },
+  "choices": {},
   "nutrition": "",
   "muscles": {},
   "layout": {
     "spots": [
-      {"id": "eest-olad", "muscle": "Clavicular", "view": "eest", "top": "21.8179%", "left": "67.1738%"},
-      {"id": "eest-rind", "muscle": "Sternal head / tavaline rind", "view": "eest", "top": "27.7794%", "left": "65.0101%"},
-      {"id": "eest-biitseps", "muscle": "Biitseps pikkpea", "view": "eest", "top": "31.0487%", "left": "14.165%"},
-      {"id": "eest-kuunarvars", "muscle": "biitsepts Lühike pea", "view": "eest", "top": "32.2025%", "left": "24.9831%"},
-      {"id": "eest-kohu", "muscle": "Kõhulihased", "view": "eest", "top": "32.3948%", "left": "57.9784%"},
-      {"id": "eest-kulg", "muscle": "barchealis biitsa sees olev lihas", "view": "eest", "top": "35.4718%", "left": "18.4922%"},
-      {"id": "eest-neli", "muscle": "Välimine kõhupõikilihas (external oblique)", "view": "eest", "top": "37.2025%", "left": "68.7965%"},
-      {"id": "eest-lahend", "muscle": "Sisemine kõhupõikilihas (internal oblique) keskmine", "view": "eest", "top": "37.3948%", "left": "52.0284%"},
-      {"id": "eest-saar", "muscle": "Kõhu ristilihas (transversus abdominis) kõige sügavamal", "view": "eest", "top": "43.1641%", "left": "52.0284%"},
-      {"id": "ring-1790433991078", "muscle": "Pöörlihaste mansett (rotator cuff)", "view": "eest", "top": "21.4333%", "left": "34.1785%"},
-      {"id": "tagant-trapeets", "muscle": "trapets", "view": "tagant", "top": "21.4333%", "left": "57.8998%"},
-      {"id": "tagant-selg", "muscle": "Lätid", "view": "tagant", "top": "33.1641%", "left": "64.1129%"},
-      {"id": "tagant-triitseps", "muscle": "long", "view": "tagant", "top": "32.0102%", "left": "78.6101%"},
-      {"id": "tagant-tuhar", "muscle": "latral", "view": "tagant", "top": "31.241%", "left": "90.5186%"},
-      {"id": "tagant-saar", "muscle": "medial", "view": "tagant", "top": "36.6256%", "left": "80.1634%"},
-      {"id": "korvalt-olad", "muscle": "Külgmine deltalihas — Lateral deltoid", "view": "korvalt", "top": "23.4736%", "left": "44.0333%"},
-      {"id": "korvalt-rind", "muscle": "Eesmine deltalihas — Anterior deltoid", "view": "korvalt", "top": "23.4736%", "left": "61.4745%"},
-      {"id": "korvalt-kohu", "muscle": "Tagumine deltalihas — Posterior deltoid", "view": "korvalt", "top": "23.4736%", "left": "28.428%"}
+      {
+        "id": "eest-olad",
+        "muscle": "Clavicular",
+        "view": "eest",
+        "top": "21.8179%",
+        "left": "67.1738%"
+      },
+      {
+        "id": "eest-rind",
+        "muscle": "Sternal head / tavaline rind",
+        "view": "eest",
+        "top": "27.7794%",
+        "left": "65.0101%"
+      },
+      {
+        "id": "eest-biitseps",
+        "muscle": "Biitseps pikkpea",
+        "view": "eest",
+        "top": "31.0487%",
+        "left": "14.165%"
+      },
+      {
+        "id": "eest-kuunarvars",
+        "muscle": "biitsepts Lühike pea",
+        "view": "eest",
+        "top": "32.2025%",
+        "left": "24.9831%"
+      },
+      {
+        "id": "eest-kohu",
+        "muscle": "Kõhulihased",
+        "view": "eest",
+        "top": "32.3948%",
+        "left": "57.9784%"
+      },
+      {
+        "id": "eest-kulg",
+        "muscle": "barchealis biitsa sees olev lihas",
+        "view": "eest",
+        "top": "35.4718%",
+        "left": "18.4922%"
+      },
+      {
+        "id": "eest-neli",
+        "muscle": "Välimine kõhupõikilihas (external oblique)",
+        "view": "eest",
+        "top": "37.2025%",
+        "left": "68.7965%"
+      },
+      {
+        "id": "eest-lahend",
+        "muscle": "Sisemine kõhupõikilihas (internal oblique) keskmine",
+        "view": "eest",
+        "top": "37.3948%",
+        "left": "52.0284%"
+      },
+      {
+        "id": "eest-saar",
+        "muscle": "Kõhu ristilihas (transversus abdominis) kõige sügavamal",
+        "view": "eest",
+        "top": "43.1641%",
+        "left": "52.0284%"
+      },
+      {
+        "id": "ring-1790433991078",
+        "muscle": "Pöörlihaste mansett (rotator cuff)",
+        "view": "eest",
+        "top": "21.4333%",
+        "left": "34.1785%"
+      },
+      {
+        "id": "tagant-trapeets",
+        "muscle": "trapets",
+        "view": "tagant",
+        "top": "21.4333%",
+        "left": "57.8998%"
+      },
+      {
+        "id": "tagant-selg",
+        "muscle": "Lätid",
+        "view": "tagant",
+        "top": "33.1641%",
+        "left": "64.1129%"
+      },
+      {
+        "id": "tagant-triitseps",
+        "muscle": "long",
+        "view": "tagant",
+        "top": "32.0102%",
+        "left": "78.6101%"
+      },
+      {
+        "id": "tagant-tuhar",
+        "muscle": "latral",
+        "view": "tagant",
+        "top": "31.241%",
+        "left": "90.5186%"
+      },
+      {
+        "id": "tagant-saar",
+        "muscle": "medial",
+        "view": "tagant",
+        "top": "36.6256%",
+        "left": "80.1634%"
+      },
+      {
+        "id": "korvalt-olad",
+        "muscle": "Külgmine deltalihas — Lateral deltoid",
+        "view": "korvalt",
+        "top": "23.4736%",
+        "left": "44.0333%"
+      },
+      {
+        "id": "korvalt-rind",
+        "muscle": "Eesmine deltalihas — Anterior deltoid",
+        "view": "korvalt",
+        "top": "23.4736%",
+        "left": "61.4745%"
+      },
+      {
+        "id": "korvalt-kohu",
+        "muscle": "Tagumine deltalihas — Posterior deltoid",
+        "view": "korvalt",
+        "top": "23.4736%",
+        "left": "28.428%"
+      }
     ]
   }
 }

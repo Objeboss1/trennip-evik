@@ -1,8 +1,5 @@
 {
-  "choices": {
-    "2026-09-25": "Ei käinud",
-    "2026-09-26": "Ei käinud"
-  },
+  "choices": {},
   "nutrition": "",
   "muscles": {
     "Külgmine deltalihas — Lateral deltoid": {
