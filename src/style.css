@@ -226,13 +226,59 @@ body.moving-spots .spot {
   cursor: pointer;
 }
 
+.plan-panel {
+  margin-top: 0.8rem;
+}
+
+.plan-tools {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.plan-tools button,
+.plan-remove,
+.plan-add {
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  color: var(--ink);
+  background: #0d0616;
+  font: inherit;
+  cursor: pointer;
+}
+
+.plan-tools button {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.plan-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.plan-remove,
+.plan-add {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.plan-remove-row {
+  width: 1.7rem;
+  padding: 0;
+  flex: none;
+}
+
 .plan-card {
   width: min(36rem, 100%);
 }
 
 .plan-cells {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--plan-columns, 3), minmax(0, 1fr));
   gap: 1.25rem;
   width: 100%;
   margin-top: 1rem;
@@ -264,7 +310,18 @@ body.moving-spots .spot {
 
 .plan-title {
   width: 100%;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
+}
+
+.plan-head .plan-title {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.plan-row input[readonly],
+.plan-title[readonly] {
+  cursor: default;
 }
 
 .plan-row input:first-child {
@@ -592,5 +649,9 @@ body.moving-spots .spot {
 
   td {
     height: 2.4rem;
+  }
+
+  .plan-cells {
+    grid-template-columns: 1fr;
   }
 }
