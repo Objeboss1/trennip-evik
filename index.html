@@ -30,6 +30,10 @@
           </thead>
           <tbody id="days"></tbody>
         </table>
+        <div class="calendar-actions">
+          <button type="button" id="stats-open">Statistika</button>
+          <button type="button" id="clear-diary">Nulli kõik</button>
+        </div>
       </section>
       <button type="button" class="plan-open" id="plan-open">Treeningkava</button>
       <div id="plan-cells" class="plan-cells" hidden></div>
@@ -121,6 +125,44 @@
             <button type="button" data-choice="Mõlemad">Mõlemad</button>
             <button type="button" data-choice="Ei käinud">Ei käinud</button>
           </div>
+          <div id="day-extra" class="day-extra" hidden>
+            <div id="run-questions" class="follow-up" hidden>
+              <label>
+                Tempo
+                <input id="run-pace" type="text" placeholder="nt 5:30 min/km" />
+              </label>
+              <label>
+                Kui palju
+                <input id="run-amount" type="text" placeholder="nt 5 km" />
+              </label>
+              <label>
+                Veel
+                <input id="run-extra" type="text" placeholder="nt kuidas tundus" />
+              </label>
+            </div>
+            <div id="gym-questions" class="follow-up" hidden>
+              <p>Kas saavutasid täna jõusaalis midagi?</p>
+              <div class="gym-answers" role="group" aria-label="Jõusaali saavutus">
+                <button type="button" data-gym="Jah">Jah</button>
+                <button type="button" data-gym="Ei">Ei</button>
+              </div>
+              <label>
+                Mida saavutasid?
+                <input id="gym-note" type="text" placeholder="nt uus raskus" />
+              </label>
+            </div>
+            <div class="day-extra-actions">
+              <button type="button" id="day-save">Salvesta</button>
+              <button type="button" id="day-skip">Jäta vahele</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="stats" class="modal" hidden>
+        <div class="modal-card stats-view">
+          <button type="button" class="back" id="stats-close">Sulge</button>
+          <h2>Statistika</h2>
+          <div id="stats-body"></div>
         </div>
       </section>
     </main>

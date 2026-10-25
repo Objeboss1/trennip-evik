@@ -107,9 +107,39 @@ function saveChoices(choices) {
 
 const choices = loadChoices()
 
+function choiceName(entry) {
+  if (!entry) return ''
+  if (typeof entry === 'string') return entry
+  return entry.choice || ''
+}
+
+function choiceDetails(entry) {
+  const name = choiceName(entry)
+  if (!entry || typeof entry === 'string') {
+    return { choice: name, pace: '', amount: '', extra: '', gym: '', gymNote: '' }
+  }
+  return {
+    choice: name,
+    pace: entry.pace || '',
+    amount: entry.amount || '',
+    extra: entry.extra || '',
+    gym: entry.gym || '',
+    gymNote: entry.gymNote || '',
+  }
+}
+
+function needsRun(name) {
+  return name === 'Jooksmine' || name === 'Mõlemad'
+}
+
+function needsGym(name) {
+  return name === 'Jõusaal' || name === 'Mõlemad'
+}
+
 function markClass(choice) {
-  if (WENT.has(choice)) return ' day-went'
-  if (choice === 'Ei käinud') return ' day-missed'
+  const name = choiceName(choice)
+  if (WENT.has(name)) return ' day-went'
+  if (name === 'Ei käinud') return ' day-missed'
   return ''
 }
 
@@ -166,10 +196,12 @@ function showDay(key) {
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
   dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${MONTHS[dateMonth - 1]} ${dateYear}`
+  const name = choiceName(choices[key])
   for (const button of choiceButtons) {
     button.disabled = false
-    button.setAttribute('aria-pressed', String(button.dataset.choice === choices[key]))
+    button.setAttribute('aria-pressed', String(button.dataset.choice === name))
   }
+  fillFollowUp(name, choiceDetails(choices[key]))
   dayView.hidden = false
 }
 
@@ -243,11 +275,134 @@ document.querySelector('#back').addEventListener('click', showCalendar)
 for (const button of choiceButtons) {
   button.addEventListener('click', () => {
     if (!isToday(openKey)) return
-    choices[openKey] = button.dataset.choice
+    const name = button.dataset.choice
+    const previous = choiceDetails(choices[openKey])
+    const keepRun = needsRun(name) && needsRun(previous.choice)
+    const keepGym = needsGym(name) && needsGym(previous.choice)
+    choices[openKey] = {
+      choice: name,
+      pace: keepRun ? previous.pace : '',
+      amount: keepRun ? previous.amount : '',
+      extra: keepRun ? previous.extra : '',
+      gym: keepGym ? previous.gym : '',
+      gymNote: keepGym ? previous.gymNote : '',
+    }
     saveChoices(choices)
     showDay(openKey)
+    render()
   })
 }
+
+const dayExtra = document.querySelector('#day-extra')
+const runQuestions = document.querySelector('#run-questions')
+const gymQuestions = document.querySelector('#gym-questions')
+const runPace = document.querySelector('#run-pace')
+const runAmount = document.querySelector('#run-amount')
+const runExtra = document.querySelector('#run-extra')
+const gymNote = document.querySelector('#gym-note')
+const gymButtons = [...document.querySelectorAll('[data-gym]')]
+const statsView = document.querySelector('#stats')
+const statsBody = document.querySelector('#stats-body')
+let gymAnswer = ''
+
+function fillFollowUp(name, details) {
+  const showRun = needsRun(name)
+  const showGym = needsGym(name)
+  dayExtra.hidden = !(showRun || showGym)
+  runQuestions.hidden = !showRun
+  gymQuestions.hidden = !showGym
+  runPace.value = showRun ? details.pace : ''
+  runAmount.value = showRun ? details.amount : ''
+  runExtra.value = showRun ? details.extra : ''
+  gymAnswer = showGym ? details.gym : ''
+  gymNote.value = showGym ? details.gymNote : ''
+  for (const button of gymButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.gym === gymAnswer))
+  }
+}
+
+function saveFollowUp(skip) {
+  const name = choiceName(choices[openKey])
+  if (!isToday(openKey) || !name) return
+  choices[openKey] = {
+    choice: name,
+    pace: !skip && needsRun(name) ? runPace.value.trim() : '',
+    amount: !skip && needsRun(name) ? runAmount.value.trim() : '',
+    extra: !skip && needsRun(name) ? runExtra.value.trim() : '',
+    gym: !skip && needsGym(name) ? gymAnswer : '',
+    gymNote: !skip && needsGym(name) ? gymNote.value.trim() : '',
+  }
+  saveChoices(choices)
+  render()
+  showCalendar()
+}
+
+for (const button of gymButtons) {
+  button.addEventListener('click', () => {
+    gymAnswer = button.dataset.gym
+    for (const item of gymButtons) {
+      item.setAttribute('aria-pressed', String(item === button))
+    }
+  })
+}
+
+document.querySelector('#day-save').addEventListener('click', () => saveFollowUp(false))
+document.querySelector('#day-skip').addEventListener('click', () => saveFollowUp(true))
+
+function renderStats() {
+  const entries = Object.values(choices).map(choiceDetails).filter((entry) => entry.choice)
+  const count = (name) => entries.filter((entry) => entry.choice === name).length
+  const runs = entries.filter((entry) => needsRun(entry.choice))
+  const gyms = entries.filter((entry) => needsGym(entry.choice))
+  const distance = runs.reduce((sum, entry) => {
+    const match = String(entry.amount).replace(',', '.').match(/(\d+(?:\.\d+)?)/)
+    return match ? sum + Number(match[1]) : sum
+  }, 0)
+  const lines = [
+    ['Märgitud päevi', entries.length],
+    ['Jooksmine', count('Jooksmine')],
+    ['Jõusaal', count('Jõusaal')],
+    ['Mõlemad', count('Mõlemad')],
+    ['Ei käinud', count('Ei käinud')],
+    ['Tempo vastatud', runs.filter((entry) => entry.pace).length],
+    ['Kogus vastatud', runs.filter((entry) => entry.amount).length],
+    ['Veel vastatud', runs.filter((entry) => entry.extra).length],
+    ['Jõusaalis saavutas', gyms.filter((entry) => entry.gym === 'Jah').length],
+    ['Jõusaalis ei saavutanud', gyms.filter((entry) => entry.gym === 'Ei').length],
+  ]
+  if (distance) lines.push(['Kokku joostud', distance])
+  statsBody.replaceChildren()
+  if (!entries.length) {
+    const empty = document.createElement('p')
+    empty.className = 'stat-line'
+    empty.textContent = 'Veel ei ole ühtegi vastust.'
+    statsBody.append(empty)
+    return
+  }
+  for (const [label, value] of lines) {
+    const row = document.createElement('p')
+    row.className = 'stat-line'
+    row.textContent = `${label}: ${value}`
+    statsBody.append(row)
+  }
+}
+
+document.querySelector('#stats-open').addEventListener('click', () => {
+  renderStats()
+  statsView.hidden = false
+})
+
+document.querySelector('#stats-close').addEventListener('click', () => {
+  statsView.hidden = true
+})
+
+document.querySelector('#clear-diary').addEventListener('click', () => {
+  for (const key of Object.keys(choices)) delete choices[key]
+  saveChoices(choices)
+  dayView.hidden = true
+  statsView.hidden = true
+  render()
+})
 
 muscles = loadMuscles()
 
