@@ -112,6 +112,12 @@ td.day-past {
   cursor: default;
 }
 
+td.day-dark {
+  background: #000000;
+  border-color: #241433;
+  color: #4a3d5c;
+}
+
 td.day-empty {
   border-color: transparent;
   background: transparent;
