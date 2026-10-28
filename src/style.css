@@ -132,6 +132,7 @@ h1 {
 .calendar-nav button,
 .calendar-actions button,
 .back,
+#day-edit,
 .choices button,
 .gym-answers button,
 .day-extra-actions button {
@@ -148,6 +149,7 @@ h1 {
 .calendar-nav button:hover,
 .calendar-actions button:hover,
 .back:hover,
+#day-edit:hover,
 .choices button:hover,
 .gym-answers button:hover,
 .day-extra-actions button:hover {
@@ -180,11 +182,6 @@ td {
   text-align: center;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
-}
-
-td.day-past,
-td.day-future {
-  cursor: default;
 }
 
 td.day-dark {
@@ -626,6 +623,15 @@ body.moving-spots .spot {
   color: var(--accent);
   font-size: clamp(1.6rem, 4vw, 2.1rem);
   font-weight: 600;
+}
+
+.day-summary {
+  margin: 0 0 1rem;
+  color: var(--ink);
+}
+
+#day-edit {
+  margin-bottom: 1rem;
 }
 
 .choices {

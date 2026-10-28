@@ -70,7 +70,6 @@
         </table>
         <div class="calendar-actions">
           <button type="button" id="stats-open">Statistika</button>
-          <button type="button" id="clear-diary">Nulli kõik</button>
         </div>
       </section>
       <button type="button" class="plan-open" id="plan-open">Treeningkava</button>
@@ -169,6 +168,8 @@
         <div class="modal-card day-view">
           <button type="button" class="back" id="back">Sulge</button>
           <h2 id="day-label"></h2>
+          <p id="day-summary" class="day-summary" hidden></p>
+          <button type="button" id="day-edit">Muuda</button>
           <div id="day-choices" class="choices" role="group" aria-label="Treening">
             <button type="button" data-choice="Jooksmine">Jooksmine</button>
             <button type="button" data-choice="Jõusaal">Jõusaal</button>
