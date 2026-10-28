@@ -27,7 +27,8 @@ const WEEKDAYS = [
 ]
 
 const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
-const UNANSWERED_DARK_BEFORE = '2026-10-29'
+const UNANSWERED_DARK_BEFORE = '2026-10-25'
+const LAUNCH_DARK_UNTIL = '2026-10-28'
 const STORAGE_KEY = 'treeningpaevik'
 
 const monthLabel = document.querySelector('#month-label')
@@ -135,6 +136,7 @@ function markClass(choice) {
 }
 
 function darkClass(key, choice) {
+  if (key >= UNANSWERED_DARK_BEFORE && key <= LAUNCH_DARK_UNTIL) return ' day-dark'
   if (choice || key >= UNANSWERED_DARK_BEFORE) return ''
   return ' day-dark'
 }

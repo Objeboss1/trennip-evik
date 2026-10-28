@@ -184,12 +184,6 @@ td {
   font-variant-numeric: tabular-nums;
 }
 
-td.day-dark {
-  background: #000000;
-  border-color: #241433;
-  color: #4a3d5c;
-}
-
 td.day-empty {
   border-color: transparent;
   background: transparent;
@@ -205,6 +199,12 @@ td.day-missed {
   background: #991b1b;
   border-color: #ef4444;
   color: var(--ink);
+}
+
+td.day-dark {
+  background: #000000;
+  border-color: #241433;
+  color: #4a3d5c;
 }
 
 .body-views {
