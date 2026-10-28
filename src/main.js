@@ -653,12 +653,36 @@ muscleReps.addEventListener('input', saveOpenMuscle)
 
 const PLAN_KEY = 'treeningpaevik-kava'
 const planPanel = document.querySelector('#plan-panel')
+const planScroll = document.querySelector('#plan-scroll')
 const planCells = document.querySelector('#plan-cells')
 const planEdit = document.querySelector('#plan-edit')
 const planAddColumn = document.querySelector('#plan-add-column')
 
 const PLAN_ROWS = 10
 let planEditing = false
+let planDrag = null
+
+planScroll.addEventListener('pointerdown', (event) => {
+  if (!planScroll.classList.contains('plan-wide')) return
+  if (event.target.closest('input, button, textarea, select, label')) return
+  planDrag = { x: event.clientX, left: planScroll.scrollLeft, pointer: event.pointerId }
+  planScroll.setPointerCapture(event.pointerId)
+  planScroll.classList.add('is-dragging')
+})
+
+planScroll.addEventListener('pointermove', (event) => {
+  if (!planDrag || planDrag.pointer !== event.pointerId) return
+  planScroll.scrollLeft = planDrag.left - (event.clientX - planDrag.x)
+})
+
+function endPlanDrag(event) {
+  if (!planDrag || (event && planDrag.pointer !== event.pointerId)) return
+  planDrag = null
+  planScroll.classList.remove('is-dragging')
+}
+
+planScroll.addEventListener('pointerup', endPlanDrag)
+planScroll.addEventListener('pointercancel', endPlanDrag)
 
 function emptyPlanColumn(rowCount = PLAN_ROWS) {
   return {
@@ -694,6 +718,7 @@ function savePlan() {
 function renderPlan() {
   planCells.replaceChildren()
   planCells.style.setProperty('--plan-columns', String(Math.max(planCellsData.length, 1)))
+  planScroll.classList.toggle('plan-wide', planCellsData.length > 3)
   planCellsData.forEach((column, columnIndex) => {
     const box = document.createElement('div')
     box.className = 'plan-box'
