@@ -188,17 +188,21 @@ let dayEditing = false
 
 function showDay(key) {
   openKey = key
-  dayEditing = false
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
   dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${MONTHS[dateMonth - 1]} ${dateYear}`
-  const summary = daySummaryText(choiceDetails(choices[key]))
-  daySummary.hidden = !summary
-  daySummary.textContent = summary
+  dayView.hidden = false
+  const details = choiceDetails(choices[key])
+  if (!details.choice) {
+    beginDayEdit()
+    return
+  }
+  dayEditing = false
+  daySummary.hidden = false
+  daySummary.textContent = daySummaryText(details)
   dayEdit.hidden = false
   dayChoices.hidden = true
   dayExtra.hidden = true
-  dayView.hidden = false
 }
 
 function refreshDayEditor() {
