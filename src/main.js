@@ -828,10 +828,18 @@ planAddColumn.addEventListener('click', () => {
 })
 
 const nutrition = document.querySelector('#nutrition')
+const goal = document.querySelector('#goal')
+const GOAL_KEY = 'treeningpaevik-eesmark'
 const savedNutrition = localStorage.getItem('treeningpaevik-toitumine')
 if (savedNutrition) nutrition.value = savedNutrition
+const savedGoal = localStorage.getItem(GOAL_KEY)
+if (savedGoal) goal.value = savedGoal
 nutrition.addEventListener('input', () => {
   localStorage.setItem('treeningpaevik-toitumine', nutrition.value)
+  pushDiary()
+})
+goal.addEventListener('input', () => {
+  localStorage.setItem(GOAL_KEY, goal.value)
   pushDiary()
 })
 
@@ -842,6 +850,7 @@ function collectDiary() {
     layout: loadJson(LAYOUT_KEY),
     plan: planCellsData,
     nutrition: nutrition.value,
+    goal: goal.value,
   }
 }
 
@@ -864,6 +873,10 @@ function applyDiary(data) {
   if (typeof data.nutrition === 'string') {
     localStorage.setItem('treeningpaevik-toitumine', data.nutrition)
     nutrition.value = data.nutrition
+  }
+  if (typeof data.goal === 'string') {
+    localStorage.setItem(GOAL_KEY, data.goal)
+    goal.value = data.goal
   }
   render()
 }
@@ -903,6 +916,11 @@ async function passwordHash(email, password) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+function accountDiary(data) {
+  const diary = data && typeof data === 'object' ? data : {}
+  return { ...diary, goal: typeof diary.goal === 'string' ? diary.goal : '' }
+}
+
 function emptyAccountDiary() {
   return {
     choices: {},
@@ -910,6 +928,7 @@ function emptyAccountDiary() {
     layout: sharedDiary.layout,
     plan: [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()],
     nutrition: '',
+    goal: '',
   }
 }
 
@@ -984,7 +1003,7 @@ async function enterAccount(emailValue, password, register) {
   }
   localStorage.setItem(SESSION_KEY, email)
   account = { email, liitus: joinedLabel(accounts[email].liitus) }
-  applyDiary(accounts[email].diary)
+  applyDiary(accountDiary(accounts[email].diary))
   renderAccount()
   accountPanel.hidden = false
 }
@@ -1015,7 +1034,7 @@ const savedAccounts = loadAccounts()
 const sessionEmail = localStorage.getItem(SESSION_KEY)
 if (sessionEmail && savedAccounts[sessionEmail]) {
   account = { email: sessionEmail, liitus: joinedLabel(savedAccounts[sessionEmail].liitus) }
-  applyDiary(savedAccounts[sessionEmail].diary)
+  applyDiary(accountDiary(savedAccounts[sessionEmail].diary))
   renderAccount()
 } else {
   applyDiary(sharedDiary)

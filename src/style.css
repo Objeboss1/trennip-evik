@@ -456,6 +456,20 @@ body.moving-spots .spot {
   resize: vertical;
 }
 
+.goal {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1.4rem;
+  color: var(--accent);
+  text-align: center;
+  font-size: 1.15rem;
+}
+
+.goal-text {
+  min-height: 7rem;
+  text-align: left;
+}
+
 .muscles-title {
   margin: 2rem 0 0.5rem;
   text-align: center;
