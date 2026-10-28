@@ -670,6 +670,7 @@ muscleReps.addEventListener('input', saveOpenMuscle)
 const PLAN_KEY = 'treeningpaevik-kava'
 const planPanel = document.querySelector('#plan-panel')
 const planScroll = document.querySelector('#plan-scroll')
+const planRange = document.querySelector('#plan-range')
 const planCells = document.querySelector('#plan-cells')
 const planEdit = document.querySelector('#plan-edit')
 const planAddColumn = document.querySelector('#plan-add-column')
@@ -699,6 +700,19 @@ function endPlanDrag(event) {
 
 planScroll.addEventListener('pointerup', endPlanDrag)
 planScroll.addEventListener('pointercancel', endPlanDrag)
+
+function updatePlanRange() {
+  const extra = planScroll.scrollWidth - planScroll.clientWidth
+  planRange.hidden = extra < 2
+  planRange.max = String(Math.max(extra, 0))
+  planRange.value = String(planScroll.scrollLeft)
+}
+
+planScroll.addEventListener('scroll', updatePlanRange)
+planRange.addEventListener('input', () => {
+  planScroll.scrollLeft = Number(planRange.value)
+})
+window.addEventListener('resize', updatePlanRange)
 
 function emptyPlanColumn(rowCount = PLAN_ROWS) {
   return {
@@ -751,7 +765,7 @@ function renderPlan() {
       savePlan()
     })
     head.append(title)
-    if (planEditing) {
+    if (planEditing && planCellsData.length > 1) {
       const removeColumn = document.createElement('button')
       removeColumn.type = 'button'
       removeColumn.className = 'plan-remove'
@@ -816,6 +830,7 @@ function renderPlan() {
     }
     planCells.append(box)
   })
+  updatePlanRange()
 }
 
 function setPlanEditing(editing) {
@@ -948,17 +963,30 @@ function emptyAccountDiary() {
   }
 }
 
-function pushDiary() {
-  if (!diaryReady || !account?.email) return
+const GUEST_KEY = 'treeningpaevik-kulaline'
+
+function flushDiary() {
+  if (!diaryReady) return
   clearTimeout(diaryTimer)
-  diaryTimer = setTimeout(() => {
+  const snapshot = structuredClone(collectDiary())
+  if (account?.email) {
     const accounts = loadAccounts()
     const record = accounts[account.email]
     if (!record) return
-    record.diary = structuredClone(collectDiary())
+    record.diary = snapshot
     saveAccounts(accounts)
-  }, 300)
+    return
+  }
+  localStorage.setItem(GUEST_KEY, JSON.stringify(snapshot))
 }
+
+function pushDiary() {
+  if (!diaryReady) return
+  clearTimeout(diaryTimer)
+  diaryTimer = setTimeout(flushDiary, 300)
+}
+
+window.addEventListener('pagehide', flushDiary)
 
 const accountOpen = document.querySelector('#account-open')
 const accountPanel = document.querySelector('#account-panel')
@@ -1004,6 +1032,7 @@ document.querySelector('#show-login').addEventListener('click', () => {
 
 async function enterAccount(emailValue, password, register) {
   showAccountError('')
+  flushDiary()
   const email = accountEmail(emailValue)
   if (!email.includes('@')) throw new Error('E-post ei kõlba.')
   if (password.length < 8) throw new Error('Parool peab olema vähemalt 8 märki.')
@@ -1011,7 +1040,7 @@ async function enterAccount(emailValue, password, register) {
   const hash = await passwordHash(email, password)
   if (register) {
     if (accounts[email]) throw new Error('See e-post on juba kasutusel.')
-    const diary = email === FIRST_EMAIL ? openingDiary : emptyAccountDiary()
+    const diary = email === FIRST_EMAIL ? structuredClone(collectDiary()) : emptyAccountDiary()
     accounts[email] = { passwordHash: hash, liitus: new Date().toISOString(), diary }
     saveAccounts(accounts)
   } else if (!accounts[email] || accounts[email].passwordHash !== hash) {
@@ -1040,11 +1069,11 @@ registerForm.addEventListener('submit', (event) => {
 })
 
 document.querySelector('#account-logout').addEventListener('click', () => {
+  flushDiary()
   localStorage.removeItem(SESSION_KEY)
   location.reload()
 })
 
-const openingDiary = structuredClone(collectDiary())
 todayStamp = stampFromDate(new Date())
 const savedAccounts = loadAccounts()
 const sessionEmail = localStorage.getItem(SESSION_KEY)
@@ -1053,9 +1082,15 @@ if (sessionEmail && savedAccounts[sessionEmail]) {
   applyDiary(accountDiary(savedAccounts[sessionEmail].diary))
   renderAccount()
 } else {
-  applyDiary(sharedDiary)
+  const guest = loadJson(GUEST_KEY)
+  if (guest) applyDiary(guest)
+  else if (!localStorage.getItem(STORAGE_KEY) && !localStorage.getItem(LAYOUT_KEY)) applyDiary(sharedDiary)
+  else applySavedLayout()
 }
 diaryReady = true
+if (!account?.email && !loadJson(GUEST_KEY)) {
+  localStorage.setItem(GUEST_KEY, JSON.stringify(collectDiary()))
+}
 
 tick()
 setInterval(tick, 1000)
