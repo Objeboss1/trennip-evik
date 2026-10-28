@@ -344,12 +344,52 @@ body.moving-spots .spot {
   width: min(36rem, 100%);
 }
 
+.plan-scroll {
+  overflow-x: auto;
+  margin-top: 1rem;
+  scrollbar-color: #c084fc #16081f;
+  scrollbar-width: thin;
+}
+
+.plan-scroll.plan-wide {
+  cursor: grab;
+  padding-bottom: 0.45rem;
+}
+
+.plan-scroll.plan-wide.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.plan-scroll::-webkit-scrollbar {
+  height: 0.7rem;
+}
+
+.plan-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c084fc;
+}
+
+.plan-scroll::-webkit-scrollbar-track {
+  background: #16081f;
+}
+
 .plan-cells {
   display: grid;
   grid-template-columns: repeat(var(--plan-columns, 3), minmax(0, 1fr));
   gap: 1.25rem;
   width: 100%;
-  margin-top: 1rem;
+}
+
+.plan-scroll.plan-wide .plan-cells {
+  width: max-content;
+  min-width: 100%;
+  grid-template-columns: repeat(var(--plan-columns), 18rem);
+}
+
+.plan-scroll.plan-wide .plan-box {
+  width: 18rem;
+  min-width: 18rem;
 }
 
 .plan-box {
