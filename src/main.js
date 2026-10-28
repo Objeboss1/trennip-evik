@@ -846,28 +846,114 @@ function applyDiary(data) {
 let diaryTimer = 0
 let diaryReady = false
 
+const apiBase = import.meta.env.BASE_URL
+let account = null
+
+function accountRequest(path, body) {
+  return fetch(`${apiBase}api/${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(async (response) => {
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.error || 'Viga')
+    return data
+  })
+}
+
 function pushDiary() {
-  if (!diaryReady) return
+  if (!diaryReady || !account?.email) return
   clearTimeout(diaryTimer)
   diaryTimer = setTimeout(() => {
-    fetch('/api/paevik', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...collectDiary(), edited: true }),
-    }).catch(() => {})
+    accountRequest('paevik.php', { ...collectDiary(), edited: true }).catch(() => {})
   }, 300)
 }
+
+const accountOpen = document.querySelector('#account-open')
+const accountPanel = document.querySelector('#account-panel')
+const accountError = document.querySelector('#account-error')
+const loginForm = document.querySelector('#account-login')
+const registerForm = document.querySelector('#account-register')
+const accountInfo = document.querySelector('#account-info')
+
+function showAccountError(message) {
+  accountError.hidden = !message
+  accountError.textContent = message || ''
+}
+
+function renderAccount() {
+  const signedIn = Boolean(account?.email)
+  accountOpen.textContent = signedIn ? 'Konto' : 'Logi sisse'
+  loginForm.hidden = signedIn
+  registerForm.hidden = true
+  accountInfo.hidden = !signedIn
+  if (signedIn) {
+    document.querySelector('#account-email').textContent = account.email
+    document.querySelector('#account-joined').textContent = account.liitus
+  }
+}
+
+accountOpen.addEventListener('click', () => {
+  accountPanel.hidden = !accountPanel.hidden
+  showAccountError('')
+  if (!accountPanel.hidden) renderAccount()
+})
+
+document.querySelector('#show-register').addEventListener('click', () => {
+  loginForm.hidden = true
+  registerForm.hidden = false
+  showAccountError('')
+})
+
+document.querySelector('#show-login').addEventListener('click', () => {
+  registerForm.hidden = true
+  loginForm.hidden = false
+  showAccountError('')
+})
+
+async function enterAccount(path, email, password) {
+  showAccountError('')
+  account = await accountRequest(path, { email, password })
+  const saved = await accountRequest('paevik.php')
+  applyDiary(saved)
+  renderAccount()
+  accountPanel.hidden = false
+}
+
+loginForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  enterAccount('login.php', loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value)
+    .catch((error) => showAccountError(error.message))
+})
+
+registerForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  enterAccount(
+    'registreeri.php',
+    registerForm.querySelector('#register-email').value,
+    registerForm.querySelector('#register-password').value,
+  ).catch((error) => showAccountError(error.message))
+})
+
+document.querySelector('#account-logout').addEventListener('click', () => {
+  accountRequest('logout.php', {}).finally(() => {
+    location.reload()
+  })
+})
 
 todayStamp = stampFromDate(new Date())
 applyDiary(sharedDiary)
 
-fetch('/api/paevik')
-  .then((response) => response.json())
-  .then((saved) => {
-    if (saved?.layout?.spots?.length) applyDiary(saved)
-    diaryReady = true
+accountRequest('konto.php')
+  .then(async (user) => {
+    if (!user?.email) return
+    account = user
+    const saved = await accountRequest('paevik.php')
+    applyDiary(saved)
+    renderAccount()
   })
-  .catch(() => {
+  .catch(() => {})
+  .finally(() => {
     diaryReady = true
   })
 
