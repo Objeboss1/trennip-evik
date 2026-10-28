@@ -39,6 +39,7 @@ function mergeDiary(base, incoming) {
     }
   }
   if (incoming?.nutrition?.trim()) next.nutrition = incoming.nutrition
+  if (incoming?.goal?.trim()) next.goal = incoming.goal
   if (hasPlan(incoming?.plan)) next.plan = incoming.plan
   if (incoming?.layout?.spots?.length) next.layout = incoming.layout
   return next
