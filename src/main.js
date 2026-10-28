@@ -27,7 +27,7 @@ const WEEKDAYS = [
 ]
 
 const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
-const UNANSWERED_DARK_BEFORE = '2026-10-25'
+const UNANSWERED_DARK_BEFORE = '2026-10-29'
 const STORAGE_KEY = 'treeningpaevik'
 
 const monthLabel = document.querySelector('#month-label')
@@ -37,6 +37,8 @@ const bodyViews = document.querySelector('.body-views')
 const muscleView = document.querySelector('#muscle')
 const dayView = document.querySelector('#day')
 const dayLabel = document.querySelector('#day-label')
+const daySummary = document.querySelector('#day-summary')
+const dayEdit = document.querySelector('#day-edit')
 const choiceButtons = [...document.querySelectorAll('[data-choice]')]
 const nowLabel = document.querySelector('#now')
 const today = new Date()
@@ -61,14 +63,6 @@ function stampFromDate(date) {
   return `${date.getFullYear()}-${monthNumber}-${dayNumber}`
 }
 
-function isPast(key) {
-  return key < todayStamp
-}
-
-function isToday(key) {
-  return key === todayStamp
-}
-
 function formatNow(date) {
   const weekday = monthTitle(WEEKDAYS[date.getDay()])
   const clock = date.toLocaleTimeString('et-EE', {
@@ -85,9 +79,6 @@ function tick() {
   nowLabel.textContent = formatNow(date)
   if (stamp === todayStamp) return
   todayStamp = stamp
-  if (!dayView.hidden && !isToday(openKey)) {
-    for (const button of choiceButtons) button.disabled = true
-  }
   if (!calendar.hidden) render()
 }
 
@@ -166,15 +157,9 @@ function render() {
       const choice = choices[key]
       const mark = markClass(choice)
       const dark = darkClass(key, choice)
-      if (isToday(key)) {
-        cells.push(
-          `<td class="day${mark}"><button type="button" class="day-button" data-date="${key}">${date}</button></td>`,
-        )
-      } else if (isPast(key)) {
-        cells.push(`<td class="day day-past${mark}${dark}">${date}</td>`)
-      } else {
-        cells.push(`<td class="day day-future${mark}">${date}</td>`)
-      }
+      cells.push(
+        `<td class="day${mark}${dark}"><button type="button" class="day-button" data-date="${key}">${date}</button></td>`,
+      )
     }
     if (index % 7 === 6) cells.push('</tr>')
   }
@@ -190,19 +175,52 @@ function showCalendar() {
   render()
 }
 
+function daySummaryText(details) {
+  if (!details.choice) return ''
+  const parts = [details.choice]
+  if (details.amount) parts.push(details.amount)
+  if (details.pace) parts.push(`tempo ${details.pace}`)
+  if (details.gymNote) parts.push(details.gymNote)
+  return parts.join(' · ')
+}
+
+let dayEditing = false
+
 function showDay(key) {
-  if (!isToday(key)) return
   openKey = key
+  dayEditing = false
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
   dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${MONTHS[dateMonth - 1]} ${dateYear}`
-  const name = choiceName(choices[key])
+  const summary = daySummaryText(choiceDetails(choices[key]))
+  daySummary.hidden = !summary
+  daySummary.textContent = summary
+  dayEdit.hidden = false
+  dayChoices.hidden = true
+  dayExtra.hidden = true
+  dayView.hidden = false
+}
+
+function refreshDayEditor() {
+  const name = choiceName(choices[openKey])
   for (const button of choiceButtons) {
     button.disabled = false
     button.setAttribute('aria-pressed', String(button.dataset.choice === name))
   }
-  fillFollowUp(name, choiceDetails(choices[key]))
-  dayView.hidden = false
+  fillFollowUp(name, choiceDetails(choices[openKey]))
+}
+
+function beginDayEdit() {
+  dayEditing = true
+  dayEdit.hidden = true
+  daySummary.hidden = true
+  const name = choiceName(choices[openKey])
+  for (const button of choiceButtons) {
+    button.disabled = false
+    button.setAttribute('aria-pressed', String(button.dataset.choice === name))
+  }
+  dayChoices.hidden = false
+  dayExtra.hidden = true
 }
 
 const MUSCLE_KEY = 'treeningpaevik-lihased'
@@ -266,17 +284,17 @@ document.querySelector('[data-nav="next"]').addEventListener('click', () => {
 
 days.addEventListener('click', (event) => {
   const button = event.target.closest('[data-date]')
-  if (!button || !isToday(button.dataset.date)) return
-  const name = choiceName(choices[button.dataset.date])
-  followStep = needsRun(name) ? 'run' : 'gym'
+  if (!button) return
   showDay(button.dataset.date)
 })
+
+dayEdit.addEventListener('click', beginDayEdit)
 
 document.querySelector('#back').addEventListener('click', showCalendar)
 
 for (const button of choiceButtons) {
   button.addEventListener('click', () => {
-    if (!isToday(openKey)) return
+    if (!dayEditing || !openKey) return
     const name = button.dataset.choice
     const previous = choiceDetails(choices[openKey])
     const keepRun = needsRun(name) && needsRun(previous.choice)
@@ -290,7 +308,7 @@ for (const button of choiceButtons) {
     }
     followStep = needsRun(name) ? 'run' : 'gym'
     saveChoices(choices)
-    showDay(openKey)
+    refreshDayEditor()
     render()
   })
 }
@@ -340,7 +358,7 @@ function fillFollowUp(name, details) {
 
 function saveFollowUp() {
   const name = choiceName(choices[openKey])
-  if (!isToday(openKey) || !name) return
+  if (!dayEditing || !openKey || !name) return
   const both = needsRun(name) && needsGym(name)
   const savingGym = needsGym(name) && (!both || followStep === 'gym')
   const current = choiceDetails(choices[openKey])
@@ -477,14 +495,6 @@ document.querySelector('#stats-open').addEventListener('click', () => {
 
 document.querySelector('#stats-close').addEventListener('click', () => {
   statsView.hidden = true
-})
-
-document.querySelector('#clear-diary').addEventListener('click', () => {
-  for (const key of Object.keys(choices)) delete choices[key]
-  saveChoices(choices)
-  dayView.hidden = true
-  statsView.hidden = true
-  render()
 })
 
 muscles = loadMuscles()
