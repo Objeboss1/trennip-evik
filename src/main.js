@@ -846,26 +846,57 @@ function applyDiary(data) {
 let diaryTimer = 0
 let diaryReady = false
 
-const apiBase = import.meta.env.BASE_URL
+const ACCOUNTS_KEY = 'trennipaevik-kontod'
+const SESSION_KEY = 'trennipaevik-sessioon'
+const FIRST_EMAIL = 'karl.kiipus@icloud.com'
 let account = null
 
-function accountRequest(path, body) {
-  return fetch(`${apiBase}api/${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: body ? { 'content-type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  }).then(async (response) => {
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(data.error || 'Viga')
-    return data
-  })
+function loadAccounts() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}')
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveAccounts(accounts) {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
+}
+
+function accountEmail(value) {
+  return value.trim().toLowerCase()
+}
+
+function joinedLabel(iso) {
+  return new Date(iso).toLocaleDateString('et-EE', { timeZone: 'Europe/Tallinn' })
+}
+
+async function passwordHash(email, password) {
+  const bytes = new TextEncoder().encode(`${email}:${password}`)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function emptyAccountDiary() {
+  return {
+    choices: {},
+    muscles: {},
+    layout: sharedDiary.layout,
+    plan: [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()],
+    nutrition: '',
+  }
 }
 
 function pushDiary() {
   if (!diaryReady || !account?.email) return
   clearTimeout(diaryTimer)
   diaryTimer = setTimeout(() => {
-    accountRequest('paevik.php', { ...collectDiary(), edited: true }).catch(() => {})
+    const accounts = loadAccounts()
+    const record = accounts[account.email]
+    if (!record) return
+    record.diary = structuredClone(collectDiary())
+    saveAccounts(accounts)
   }, 300)
 }
 
@@ -911,51 +942,60 @@ document.querySelector('#show-login').addEventListener('click', () => {
   showAccountError('')
 })
 
-async function enterAccount(path, email, password) {
+async function enterAccount(emailValue, password, register) {
   showAccountError('')
-  account = await accountRequest(path, { email, password })
-  const saved = await accountRequest('paevik.php')
-  applyDiary(saved)
+  const email = accountEmail(emailValue)
+  if (!email.includes('@')) throw new Error('E-post ei kõlba.')
+  if (password.length < 8) throw new Error('Parool peab olema vähemalt 8 märki.')
+  const accounts = loadAccounts()
+  const hash = await passwordHash(email, password)
+  if (register) {
+    if (accounts[email]) throw new Error('See e-post on juba kasutusel.')
+    const diary = email === FIRST_EMAIL ? openingDiary : emptyAccountDiary()
+    accounts[email] = { passwordHash: hash, liitus: new Date().toISOString(), diary }
+    saveAccounts(accounts)
+  } else if (!accounts[email] || accounts[email].passwordHash !== hash) {
+    throw new Error('Vale e-post või parool.')
+  }
+  localStorage.setItem(SESSION_KEY, email)
+  account = { email, liitus: joinedLabel(accounts[email].liitus) }
+  applyDiary(accounts[email].diary)
   renderAccount()
   accountPanel.hidden = false
 }
 
 loginForm.addEventListener('submit', (event) => {
   event.preventDefault()
-  enterAccount('login.php', loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value)
+  enterAccount(loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value, false)
     .catch((error) => showAccountError(error.message))
 })
 
 registerForm.addEventListener('submit', (event) => {
   event.preventDefault()
   enterAccount(
-    'registreeri.php',
     registerForm.querySelector('#register-email').value,
     registerForm.querySelector('#register-password').value,
+    true,
   ).catch((error) => showAccountError(error.message))
 })
 
 document.querySelector('#account-logout').addEventListener('click', () => {
-  accountRequest('logout.php', {}).finally(() => {
-    location.reload()
-  })
+  localStorage.removeItem(SESSION_KEY)
+  location.reload()
 })
 
+const openingDiary = structuredClone(collectDiary())
 todayStamp = stampFromDate(new Date())
-applyDiary(sharedDiary)
-
-accountRequest('konto.php')
-  .then(async (user) => {
-    if (!user?.email) return
-    account = user
-    const saved = await accountRequest('paevik.php')
-    applyDiary(saved)
-    renderAccount()
-  })
-  .catch(() => {})
-  .finally(() => {
-    diaryReady = true
-  })
+const savedAccounts = loadAccounts()
+const sessionEmail = localStorage.getItem(SESSION_KEY)
+if (sessionEmail && savedAccounts[sessionEmail]) {
+  account = { email: sessionEmail, liitus: joinedLabel(savedAccounts[sessionEmail].liitus) }
+  applyDiary(savedAccounts[sessionEmail].diary)
+  renderAccount()
+} else {
+  applyDiary(sharedDiary)
+}
+diaryReady = true
 
 tick()
 setInterval(tick, 1000)
