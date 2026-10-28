@@ -846,30 +846,156 @@ function applyDiary(data) {
 let diaryTimer = 0
 let diaryReady = false
 
+const ACCOUNTS_KEY = 'trennipaevik-kontod'
+const SESSION_KEY = 'trennipaevik-sessioon'
+const FIRST_EMAIL = 'karl.kiipus@icloud.com'
+let account = null
+
+function loadAccounts() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}')
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveAccounts(accounts) {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
+}
+
+function accountEmail(value) {
+  return value.trim().toLowerCase()
+}
+
+function joinedLabel(iso) {
+  return new Date(iso).toLocaleDateString('et-EE', { timeZone: 'Europe/Tallinn' })
+}
+
+async function passwordHash(email, password) {
+  const bytes = new TextEncoder().encode(`${email}:${password}`)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function emptyAccountDiary() {
+  return {
+    choices: {},
+    muscles: {},
+    layout: sharedDiary.layout,
+    plan: [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()],
+    nutrition: '',
+  }
+}
+
 function pushDiary() {
-  if (!diaryReady) return
+  if (!diaryReady || !account?.email) return
   clearTimeout(diaryTimer)
   diaryTimer = setTimeout(() => {
-    fetch('/api/paevik', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...collectDiary(), edited: true }),
-    }).catch(() => {})
+    const accounts = loadAccounts()
+    const record = accounts[account.email]
+    if (!record) return
+    record.diary = structuredClone(collectDiary())
+    saveAccounts(accounts)
   }, 300)
 }
 
-todayStamp = stampFromDate(new Date())
-applyDiary(sharedDiary)
+const accountOpen = document.querySelector('#account-open')
+const accountPanel = document.querySelector('#account-panel')
+const accountError = document.querySelector('#account-error')
+const loginForm = document.querySelector('#account-login')
+const registerForm = document.querySelector('#account-register')
+const accountInfo = document.querySelector('#account-info')
 
-fetch('/api/paevik')
-  .then((response) => response.json())
-  .then((saved) => {
-    if (saved?.layout?.spots?.length) applyDiary(saved)
-    diaryReady = true
-  })
-  .catch(() => {
-    diaryReady = true
-  })
+function showAccountError(message) {
+  accountError.hidden = !message
+  accountError.textContent = message || ''
+}
+
+function renderAccount() {
+  const signedIn = Boolean(account?.email)
+  accountOpen.textContent = signedIn ? 'Konto' : 'Logi sisse'
+  loginForm.hidden = signedIn
+  registerForm.hidden = true
+  accountInfo.hidden = !signedIn
+  if (signedIn) {
+    document.querySelector('#account-email').textContent = account.email
+    document.querySelector('#account-joined').textContent = account.liitus
+  }
+}
+
+accountOpen.addEventListener('click', () => {
+  accountPanel.hidden = !accountPanel.hidden
+  showAccountError('')
+  if (!accountPanel.hidden) renderAccount()
+})
+
+document.querySelector('#show-register').addEventListener('click', () => {
+  loginForm.hidden = true
+  registerForm.hidden = false
+  showAccountError('')
+})
+
+document.querySelector('#show-login').addEventListener('click', () => {
+  registerForm.hidden = true
+  loginForm.hidden = false
+  showAccountError('')
+})
+
+async function enterAccount(emailValue, password, register) {
+  showAccountError('')
+  const email = accountEmail(emailValue)
+  if (!email.includes('@')) throw new Error('E-post ei kõlba.')
+  if (password.length < 8) throw new Error('Parool peab olema vähemalt 8 märki.')
+  const accounts = loadAccounts()
+  const hash = await passwordHash(email, password)
+  if (register) {
+    if (accounts[email]) throw new Error('See e-post on juba kasutusel.')
+    const diary = email === FIRST_EMAIL ? openingDiary : emptyAccountDiary()
+    accounts[email] = { passwordHash: hash, liitus: new Date().toISOString(), diary }
+    saveAccounts(accounts)
+  } else if (!accounts[email] || accounts[email].passwordHash !== hash) {
+    throw new Error('Vale e-post või parool.')
+  }
+  localStorage.setItem(SESSION_KEY, email)
+  account = { email, liitus: joinedLabel(accounts[email].liitus) }
+  applyDiary(accounts[email].diary)
+  renderAccount()
+  accountPanel.hidden = false
+}
+
+loginForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  enterAccount(loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value, false)
+    .catch((error) => showAccountError(error.message))
+})
+
+registerForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  enterAccount(
+    registerForm.querySelector('#register-email').value,
+    registerForm.querySelector('#register-password').value,
+    true,
+  ).catch((error) => showAccountError(error.message))
+})
+
+document.querySelector('#account-logout').addEventListener('click', () => {
+  localStorage.removeItem(SESSION_KEY)
+  location.reload()
+})
+
+const openingDiary = structuredClone(collectDiary())
+todayStamp = stampFromDate(new Date())
+const savedAccounts = loadAccounts()
+const sessionEmail = localStorage.getItem(SESSION_KEY)
+if (sessionEmail && savedAccounts[sessionEmail]) {
+  account = { email: sessionEmail, liitus: joinedLabel(savedAccounts[sessionEmail].liitus) }
+  applyDiary(savedAccounts[sessionEmail].diary)
+  renderAccount()
+} else {
+  applyDiary(sharedDiary)
+}
+diaryReady = true
 
 tick()
 setInterval(tick, 1000)

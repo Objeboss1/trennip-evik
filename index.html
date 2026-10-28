@@ -7,6 +7,44 @@
     <title>Trennipäevik</title>
   </head>
   <body>
+    <div class="account-corner">
+      <button type="button" id="account-open">Logi sisse</button>
+      <div id="account-panel" class="account-panel" hidden>
+        <p id="account-error" class="account-error" hidden></p>
+        <form id="account-login">
+          <label>
+            E-post
+            <input id="login-email" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            Parool
+            <input id="login-password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Logi sisse</button>
+          <button type="button" id="show-register">Registreeru</button>
+        </form>
+        <form id="account-register" hidden>
+          <label>
+            E-post
+            <input id="register-email" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            Parool
+            <input id="register-password" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+          <p class="account-hint">Vähemalt 8 märki.</p>
+          <button type="submit">Loo konto</button>
+          <button type="button" id="show-login">Tagasi</button>
+        </form>
+        <div id="account-info" hidden>
+          <p>E-post</p>
+          <p id="account-email" class="account-value"></p>
+          <p>Liitusid</p>
+          <p id="account-joined" class="account-value"></p>
+          <button type="button" id="account-logout">Logi välja</button>
+        </div>
+      </div>
+    </div>
     <main>
       <h1>Trennipäevik</h1>
       <p id="now" class="now"></p>

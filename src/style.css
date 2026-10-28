@@ -29,6 +29,74 @@ main {
   padding: 3.5rem 1.25rem 4rem;
 }
 
+.account-corner {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 30;
+}
+
+.account-corner > button,
+.account-panel button {
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  color: var(--ink);
+  background: #0d0616;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.account-panel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: min(18rem, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: #000000;
+}
+
+.account-panel form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.account-panel label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--accent);
+  text-align: left;
+}
+
+.account-panel input {
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--ink);
+  background: #0d0616;
+  font: inherit;
+}
+
+.account-hint,
+.account-error {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.account-error {
+  color: #f0abfc;
+}
+
+.account-value {
+  margin: -0.35rem 0 0.2rem;
+}
+
 h1 {
   margin: 0 0 0.75rem;
   color: var(--accent);
