@@ -915,22 +915,27 @@ function applyDiary(data) {
 let diaryTimer = 0
 let diaryReady = false
 
-const ACCOUNTS_KEY = 'trennipaevik-kontod'
-const SESSION_KEY = 'trennipaevik-sessioon'
 const FIRST_EMAIL = 'karl.kiipus@icloud.com'
 let account = null
 
-function loadAccounts() {
+async function server(action, body, { keepalive = false } = {}) {
+  const response = await fetch(`/api/index.php?action=${encodeURIComponent(action)}`, {
+    method: body ? 'POST' : 'GET',
+    credentials: 'same-origin',
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+    keepalive,
+  })
+  let payload = {}
   try {
-    const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}')
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    payload = await response.json()
   } catch {
-    return {}
+    payload = {}
   }
-}
-
-function saveAccounts(accounts) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
+  if (!response.ok || payload.ok === false) {
+    throw new Error(payload.error || 'Server ei vasta.')
+  }
+  return payload
 }
 
 function accountEmail(value) {
@@ -939,12 +944,6 @@ function accountEmail(value) {
 
 function joinedLabel(iso) {
   return new Date(iso).toLocaleDateString('et-EE', { timeZone: 'Europe/Tallinn' })
-}
-
-async function passwordHash(email, password) {
-  const bytes = new TextEncoder().encode(`${email}:${password}`)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 function accountDiary(data) {
@@ -966,18 +965,12 @@ function emptyAccountDiary() {
 const GUEST_KEY = 'treeningpaevik-kulaline'
 
 function flushDiary() {
-  if (!diaryReady) return
+  if (!diaryReady) return Promise.resolve()
   clearTimeout(diaryTimer)
   const snapshot = structuredClone(collectDiary())
-  if (account?.email) {
-    const accounts = loadAccounts()
-    const record = accounts[account.email]
-    if (!record) return
-    record.diary = snapshot
-    saveAccounts(accounts)
-    return
-  }
+  if (account?.email) return server('save', { diary: snapshot }).catch(() => {})
   localStorage.setItem(GUEST_KEY, JSON.stringify(snapshot))
+  return Promise.resolve()
 }
 
 function pushDiary() {
@@ -986,7 +979,14 @@ function pushDiary() {
   diaryTimer = setTimeout(flushDiary, 300)
 }
 
-window.addEventListener('pagehide', flushDiary)
+window.addEventListener('pagehide', () => {
+  if (!diaryReady) return
+  if (!account?.email) {
+    localStorage.setItem(GUEST_KEY, JSON.stringify(collectDiary()))
+    return
+  }
+  void server('save', { diary: collectDiary() }, { keepalive: true })
+})
 
 const accountOpen = document.querySelector('#account-open')
 const accountPanel = document.querySelector('#account-panel')
@@ -1032,23 +1032,14 @@ document.querySelector('#show-login').addEventListener('click', () => {
 
 async function enterAccount(emailValue, password, register) {
   showAccountError('')
-  flushDiary()
+  await flushDiary()
   const email = accountEmail(emailValue)
   if (!email.includes('@')) throw new Error('E-post ei kõlba.')
   if (password.length < 8) throw new Error('Parool peab olema vähemalt 8 märki.')
-  const accounts = loadAccounts()
-  const hash = await passwordHash(email, password)
-  if (register) {
-    if (accounts[email]) throw new Error('See e-post on juba kasutusel.')
-    const diary = email === FIRST_EMAIL ? structuredClone(collectDiary()) : emptyAccountDiary()
-    accounts[email] = { passwordHash: hash, liitus: new Date().toISOString(), diary }
-    saveAccounts(accounts)
-  } else if (!accounts[email] || accounts[email].passwordHash !== hash) {
-    throw new Error('Vale e-post või parool.')
-  }
-  localStorage.setItem(SESSION_KEY, email)
-  account = { email, liitus: joinedLabel(accounts[email].liitus) }
-  applyDiary(accountDiary(accounts[email].diary))
+  const diary = !register ? undefined : email === FIRST_EMAIL ? structuredClone(collectDiary()) : emptyAccountDiary()
+  const result = await server(register ? 'register' : 'login', { email, password, diary })
+  account = { email: result.user.email, liitus: joinedLabel(result.user.loodud) }
+  applyDiary(accountDiary(result.diary))
   renderAccount()
   accountPanel.hidden = false
 }
@@ -1070,28 +1061,39 @@ registerForm.addEventListener('submit', (event) => {
 
 document.querySelector('#account-logout').addEventListener('click', () => {
   flushDiary()
-  localStorage.removeItem(SESSION_KEY)
-  location.reload()
+    .then(() => server('logout'))
+    .catch(() => {})
+    .finally(() => location.reload())
 })
 
 todayStamp = stampFromDate(new Date())
-const savedAccounts = loadAccounts()
-const sessionEmail = localStorage.getItem(SESSION_KEY)
-if (sessionEmail && savedAccounts[sessionEmail]) {
-  account = { email: sessionEmail, liitus: joinedLabel(savedAccounts[sessionEmail].liitus) }
-  applyDiary(accountDiary(savedAccounts[sessionEmail].diary))
-  renderAccount()
-} else {
-  const guest = loadJson(GUEST_KEY)
-  if (guest) applyDiary(guest)
-  else if (!localStorage.getItem(STORAGE_KEY) && !localStorage.getItem(LAYOUT_KEY)) applyDiary(sharedDiary)
-  else applySavedLayout()
-}
-diaryReady = true
-if (!account?.email && !loadJson(GUEST_KEY)) {
-  localStorage.setItem(GUEST_KEY, JSON.stringify(collectDiary()))
+
+async function start() {
+  let signedIn = false
+  try {
+    const session = await server('session')
+    if (session.user) {
+      account = { email: session.user.email, liitus: joinedLabel(session.user.loodud) }
+      applyDiary(accountDiary(session.diary))
+      renderAccount()
+      signedIn = true
+    }
+  } catch {
+    signedIn = false
+  }
+  if (!signedIn) {
+    const guest = loadJson(GUEST_KEY)
+    if (guest) applyDiary(guest)
+    else if (!localStorage.getItem(STORAGE_KEY) && !localStorage.getItem(LAYOUT_KEY)) applyDiary(sharedDiary)
+    else applySavedLayout()
+  }
+  diaryReady = true
+  if (!account?.email && !loadJson(GUEST_KEY)) {
+    localStorage.setItem(GUEST_KEY, JSON.stringify(collectDiary()))
+  }
+  render()
 }
 
 tick()
 setInterval(tick, 1000)
-render()
+void start()
