@@ -27,8 +27,6 @@ const WEEKDAYS = [
 ]
 
 const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
-const UNANSWERED_DARK_BEFORE = '2026-10-25'
-const LAUNCH_DARK_UNTIL = '2026-10-28'
 const STORAGE_KEY = 'treeningpaevik'
 
 const monthLabel = document.querySelector('#month-label')
@@ -74,12 +72,28 @@ function formatNow(date) {
   return `${weekday}, ${date.getDate()}. ${MONTHS[date.getMonth()]} ${date.getFullYear()} ${clock}`
 }
 
+function shiftStamp(stamp, days) {
+  const [stampYear, stampMonth, stampDay] = stamp.split('-').map(Number)
+  const date = new Date(stampYear, stampMonth - 1, stampDay)
+  date.setDate(date.getDate() + days)
+  return stampFromDate(date)
+}
+
+function isLocked(key) {
+  if (!todayStamp) return false
+  return key < shiftStamp(todayStamp, -1)
+}
+
 function tick() {
   const date = new Date()
   const stamp = stampFromDate(date)
   nowLabel.textContent = formatNow(date)
   if (stamp === todayStamp) return
   todayStamp = stamp
+  if (openKey && isLocked(openKey)) {
+    dayView.hidden = true
+    openKey = ''
+  }
   if (!calendar.hidden) render()
 }
 
@@ -135,10 +149,8 @@ function markClass(choice) {
   return ''
 }
 
-function darkClass(key, choice) {
-  if (key >= UNANSWERED_DARK_BEFORE && key <= LAUNCH_DARK_UNTIL) return ' day-dark'
-  if (choice || key >= UNANSWERED_DARK_BEFORE) return ''
-  return ' day-dark'
+function lockedClass(key) {
+  return isLocked(key) ? ' day-locked' : ''
 }
 
 function render() {
@@ -158,10 +170,11 @@ function render() {
       const key = dateKey(date)
       const choice = choices[key]
       const mark = markClass(choice)
-      const dark = darkClass(key, choice)
-      cells.push(
-        `<td class="day${mark}${dark}"><button type="button" class="day-button" data-date="${key}">${date}</button></td>`,
-      )
+      const locked = lockedClass(key)
+      const content = locked
+        ? `<span class="day-number">${date}</span>`
+        : `<button type="button" class="day-button" data-date="${key}">${date}</button>`
+      cells.push(`<td class="day${mark}${locked}">${content}</td>`)
     }
     if (index % 7 === 6) cells.push('</tr>')
   }
@@ -189,6 +202,7 @@ function daySummaryText(details) {
 let dayEditing = false
 
 function showDay(key) {
+  if (isLocked(key)) return
   openKey = key
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
   const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
@@ -290,7 +304,7 @@ document.querySelector('[data-nav="next"]').addEventListener('click', () => {
 
 days.addEventListener('click', (event) => {
   const button = event.target.closest('[data-date]')
-  if (!button) return
+  if (!button || isLocked(button.dataset.date)) return
   showDay(button.dataset.date)
 })
 
