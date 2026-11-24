@@ -8,7 +8,10 @@
   </head>
   <body>
     <div class="account-corner">
-      <button type="button" id="account-open">Logi sisse</button>
+      <div class="account-actions">
+        <button type="button" id="info-open">Info</button>
+        <button type="button" id="account-open">Logi sisse</button>
+      </div>
       <div id="account-panel" class="account-panel" hidden>
         <p id="account-error" class="account-error" hidden></p>
         <form id="account-login">
@@ -45,6 +48,33 @@
         </div>
       </div>
     </div>
+    <section id="info-page" class="info-page" hidden aria-labelledby="info-title">
+      <button type="button" class="info-close" id="info-close">Sulge</button>
+      <div class="info-card">
+        <h2 id="info-title">Kuidas Trennipäevikut kasutada</h2>
+        <p>Siin pead arvet, mida treenisid, mida sööd ja mida tahad saavutada.</p>
+        <h3>Kalender</h3>
+        <p>Vajuta päevale. Tühi päev küsib kohe, mida tegid. Täidetud päev näitab kokkuvõtet ja nuppu Muuda.</p>
+        <ul>
+          <li>Roheline päev tähendab, et käisid jooksmas, jõusaalis või mõlemas.</li>
+          <li>Punane päev tähendab, et ei käinud.</li>
+          <li>Tume päev on vana täitmata päev.</li>
+        </ul>
+        <p>Kuu vahetamiseks on nupud Eelmine kuu ja Järgmine kuu.</p>
+        <h3>Jooksmine ja jõusaal</h3>
+        <p>Jooksmine ja Mõlemad küsivad tempo 1 km kohta ning pikkuse 1 kuni 21 km. Jõusaal ja Mõlemad küsivad, mida saavutasid. Valmis salvestab päeva. Sulge paneb akna kinni.</p>
+        <h3>Statistika</h3>
+        <p>Kalendri all on nupp Statistika. Seal on jooksud, keskmine kilomeetrite arv, tempo ja jõusaalis kirja pandud saavutused.</p>
+        <h3>Treeningkava</h3>
+        <p>Nupp Treeningkava avab kava. Muuda laseb lahtritesse kirjutada ning ridu ja veerge lisada või ära võtta. Kui veerge on rohkem kui kolm, saab kava külje peale lohistada. All on ka liugur.</p>
+        <h3>Lihased</h3>
+        <p>Vajuta kehal olevale ringile. Sinna saad kirjutada harjutused ja mitu korda teed. Uue ringi jaoks vajuta Muuda, vali pilt ja siis Lisa ring. Ringi saab lohistada. Lõpuks vajuta Salvesta. Ringi kustutamine on selle ringi aknas.</p>
+        <h3>Toitumine</h3>
+        <p>Toitumise kasti kirjuta, mida sööd. Selle all on kast, kuhu kirjutad, mida tahad saavutada ja mis ajaga.</p>
+        <h3>Konto</h3>
+        <p>Nupp Logi sisse avab sisselogimise. Kui oled juba sees, on sama nupu nimi Konto. Registreeru teeb uue konto ja parool on vähemalt 8 märki. Igal kontol on oma päevik. Ilma kontota jääb päevik sellesse brauserisse.</p>
+      </div>
+    </section>
     <main>
       <h1>Trennipäevik</h1>
       <p id="now" class="now"></p>

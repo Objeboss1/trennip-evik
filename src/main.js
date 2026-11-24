@@ -990,6 +990,21 @@ window.addEventListener('pagehide', flushDiary)
 
 const accountOpen = document.querySelector('#account-open')
 const accountPanel = document.querySelector('#account-panel')
+const infoPage = document.querySelector('#info-page')
+
+document.querySelector('#info-open').addEventListener('click', () => {
+  accountPanel.hidden = true
+  infoPage.hidden = false
+  document.querySelector('#info-close').focus()
+})
+
+document.querySelector('#info-close').addEventListener('click', () => {
+  infoPage.hidden = true
+})
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !infoPage.hidden) infoPage.hidden = true
+})
 const accountError = document.querySelector('#account-error')
 const loginForm = document.querySelector('#account-login')
 const registerForm = document.querySelector('#account-register')
