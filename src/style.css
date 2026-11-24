@@ -36,8 +36,16 @@ main {
   z-index: 30;
 }
 
-.account-corner > button,
-.account-panel button {
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.account-actions > button,
+.account-panel button,
+.info-close {
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   padding: 0.45rem 0.75rem;
@@ -46,6 +54,48 @@ main {
   font: inherit;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+.info-page {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: auto;
+  background: #000000;
+}
+
+.info-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+}
+
+.info-card {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4.5rem 1.25rem 3rem;
+}
+
+.info-card h2 {
+  margin: 0 0 0.8rem;
+}
+
+.info-card h3 {
+  margin: 1.4rem 0 0.35rem;
+  color: var(--accent);
+  font-size: 1.15rem;
+}
+
+.info-card p,
+.info-card li {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.info-card ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
 }
 
 .account-panel {
