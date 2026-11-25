@@ -1,10 +1,15 @@
 :root {
   color-scheme: dark;
-  --ink: #f4f0ff;
-  --muted: #d4c4f5;
-  --paper: #000000;
-  --line: #a855f7;
-  --accent: #c084fc;
+  --ink: #f4f7fb;
+  --muted: #9aa6b8;
+  --paper: #090b10;
+  --card: #151922;
+  --card-2: #1c2230;
+  --line: rgba(255, 255, 255, 0.08);
+  --accent: #d6ff4a;
+  --orange: #ff7a1a;
+  --went: #c8f24d;
+  --missed: #ff5d73;
 }
 
 * {
@@ -18,15 +23,31 @@ body {
 }
 
 body {
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   color: var(--ink);
-  background: var(--paper);
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(214, 255, 74, 0.16), transparent 55%),
+    radial-gradient(700px 380px at -10% 8%, rgba(255, 122, 26, 0.18), transparent 50%),
+    var(--paper);
 }
 
 main {
   max-width: 68rem;
   margin: 0 auto;
   padding: 3.5rem 1.25rem 4rem;
+}
+
+.hero {
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .account-corner {
@@ -45,15 +66,62 @@ main {
 
 .account-actions > button,
 .account-panel button,
-.info-close {
+.info-close,
+.calendar-nav button,
+.calendar-actions button,
+.back,
+#day-edit,
+.choices button,
+.gym-answers button,
+.day-extra-actions button,
+.plan-open,
+.plan-tools button,
+.plan-remove,
+.plan-add,
+.spot-edit button {
   border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
   color: var(--ink);
-  background: #0d0616;
+  background: var(--card-2);
   font: inherit;
   font-size: 0.9rem;
+  font-weight: 650;
   cursor: pointer;
+}
+
+#account-open,
+#stats-open,
+#day-save,
+.account-panel button[type='submit'] {
+  border-color: transparent;
+  background: var(--accent);
+  color: #14180c;
+}
+
+#plan-open {
+  border-color: transparent;
+  background: var(--orange);
+  color: #1c0d04;
+  font-size: 1rem;
+  font-weight: 750;
+  padding: 0.9rem 1.4rem;
+  box-shadow: 0 10px 30px rgba(255, 122, 26, 0.28);
+}
+
+.account-actions > button:hover,
+.account-panel button:hover,
+.info-close:hover,
+.calendar-nav button:hover,
+.calendar-actions button:hover,
+.back:hover,
+#day-edit:hover,
+.choices button:hover,
+.gym-answers button:hover,
+.day-extra-actions button:hover,
+.plan-tools button:hover,
+.spot-edit button:hover {
+  filter: brightness(1.12);
 }
 
 .info-page {
@@ -61,7 +129,9 @@ main {
   inset: 0;
   z-index: 40;
   overflow: auto;
-  background: #000000;
+  background:
+    radial-gradient(800px 360px at 100% 0%, rgba(214, 255, 74, 0.12), transparent 55%),
+    var(--paper);
 }
 
 .info-close {
@@ -76,24 +146,46 @@ main {
   padding: 4.5rem 1.25rem 3rem;
 }
 
-.info-card h2 {
+.info-card h2,
+.modal-card h2,
+h1 {
   margin: 0 0 0.8rem;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+
+.info-card h3,
+.stat-block h3,
+.muscle-view label,
+.follow-up label,
+.account-panel label,
+.spot-tools label,
+.goal,
+.calendar-nav h2,
+.muscles-title,
+.body-views figcaption {
+  color: var(--accent);
 }
 
 .info-card h3 {
   margin: 1.4rem 0 0.35rem;
-  color: var(--accent);
-  font-size: 1.15rem;
+  font-size: 1.05rem;
 }
 
 .info-card p,
-.info-card li {
+.info-card li,
+.spot-help,
+.account-hint,
+.now,
+.stat-line,
+.follow-up p {
   margin: 0.35rem 0 0;
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
-.info-card ul {
+.info-card ul,
+.achieve-list {
   margin: 0.35rem 0 0;
   padding-left: 1.2rem;
 }
@@ -105,62 +197,74 @@ main {
   width: min(18rem, calc(100vw - 2rem));
   display: grid;
   gap: 0.7rem;
-  padding: 0.9rem;
+  padding: 1rem;
   border: 1px solid var(--line);
-  border-radius: 0.8rem;
-  background: #000000;
+  border-radius: 1.2rem;
+  background: #12161e;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 
-.account-panel form {
+.account-panel form,
+.account-panel label,
+.muscle-view,
+.muscle-view label,
+.follow-up,
+.follow-up label,
+.day-extra,
+.spot-tools label,
+.goal {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.45rem;
 }
 
-.account-panel label {
-  display: grid;
-  gap: 0.3rem;
-  color: var(--accent);
-  text-align: left;
-}
-
-.account-panel input {
+.account-panel input,
+.plan-row input,
+.plan-title,
+.nutrition,
+.muscle-view textarea,
+.muscle-view input,
+.muscle-buttons button,
+.spot-tools input,
+.spot-tools select,
+.follow-up input,
+.follow-up select {
   border: 1px solid var(--line);
-  border-radius: 0.45rem;
-  padding: 0.55rem 0.7rem;
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem;
   color: var(--ink);
-  background: #0d0616;
+  background: #0e1218;
   font: inherit;
 }
 
-.account-hint,
 .account-error {
   margin: 0;
-  color: var(--muted);
+  color: #ffb4c0;
   font-size: 0.85rem;
-}
-
-.account-error {
-  color: #f0abfc;
 }
 
 .account-value {
   margin: -0.35rem 0 0.2rem;
+  color: var(--ink);
 }
 
 h1 {
-  margin: 0 0 0.75rem;
-  color: var(--accent);
-  font-size: clamp(2.25rem, 6vw, 3.25rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 760;
+  line-height: 0.95;
 }
 
 .now {
-  margin: 0 0 1.5rem;
-  color: var(--ink);
-  font-size: 1.125rem;
-  line-height: 1.4;
+  margin: 0.7rem 0 0;
+  font-size: 1rem;
+}
+
+.panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1.4rem;
+  background: rgba(21, 25, 34, 0.92);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
 }
 
 .calendar-nav {
@@ -173,37 +277,13 @@ h1 {
 
 .calendar-nav h2 {
   margin: 0;
-  color: var(--accent);
   font-size: 1.35rem;
-  font-weight: 600;
+  font-weight: 720;
   text-align: center;
 }
 
-.calendar-nav button,
-.calendar-actions button,
-.back,
-#day-edit,
-.choices button,
-.gym-answers button,
-.day-extra-actions button {
-  font: inherit;
-  font-size: 0.95rem;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  padding: 0.45rem 0.85rem;
-  cursor: pointer;
-}
-
-.calendar-nav button:hover,
-.calendar-actions button:hover,
-.back:hover,
-#day-edit:hover,
-.choices button:hover,
-.gym-answers button:hover,
-.day-extra-actions button:hover {
-  background: rgba(168, 85, 247, 0.22);
+.calendar-nav button {
+  min-width: 2.6rem;
 }
 
 table {
@@ -214,24 +294,29 @@ table {
 }
 
 th {
-  padding: 0 0.1rem 0.2rem;
+  padding: 0 0.1rem 0.35rem;
   color: var(--muted);
-  font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   line-height: 1.2;
   text-align: center;
-  hyphens: manual;
+  text-transform: uppercase;
+}
+
+.day-short {
+  display: none;
 }
 
 td {
-  height: 2.8rem;
-  border: 1px solid var(--line);
-  border-radius: 0.35rem;
-  background: #0d0616;
+  height: 2.9rem;
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+  background: var(--card-2);
   text-align: center;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 td.day-empty {
@@ -240,15 +325,22 @@ td.day-empty {
 }
 
 td.day-went {
-  background: #166534;
-  border-color: #22c55e;
-  color: var(--ink);
+  background: var(--went);
+  color: #172000;
 }
 
 td.day-missed {
-  background: #991b1b;
-  border-color: #ef4444;
-  color: var(--ink);
+  background: rgba(255, 93, 115, 0.18);
+  border-color: rgba(255, 93, 115, 0.7);
+  color: #ffd5dc;
+}
+
+td.day-today {
+  box-shadow: inset 0 0 0 2px var(--orange);
+}
+
+td.day-went.day-today {
+  box-shadow: inset 0 0 0 2px #172000;
 }
 
 td.day-locked {
@@ -256,9 +348,27 @@ td.day-locked {
   cursor: default;
 }
 
-.day-number {
+.day-number,
+.day-button {
   display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.day-number {
   cursor: default;
+  line-height: 2.9rem;
+}
+
+.day-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 2.9rem;
 }
 
 .body-views {
@@ -266,7 +376,7 @@ td.day-locked {
   grid-template-columns: 1fr 1fr;
   justify-items: center;
   gap: 1.5rem 2rem;
-  margin: 2.5rem 0 1rem;
+  margin: 0.4rem 0 0;
 }
 
 .body-views figure:last-of-type {
@@ -285,6 +395,9 @@ td.day-locked {
   height: auto;
   margin-inline: auto;
   line-height: 0;
+  border-radius: 1.2rem;
+  overflow: hidden;
+  background: #0c1016;
 }
 
 .shot[data-view='eest'] {
@@ -307,7 +420,7 @@ td.day-locked {
   height: 100%;
   display: block;
   object-fit: fill;
-  background: #000000;
+  background: #0c1016;
 }
 
 .spot {
@@ -315,16 +428,17 @@ td.day-locked {
   width: 0.95rem;
   height: 0.95rem;
   padding: 0;
-  border: 2px solid #c084fc;
+  border: 2px solid #102000;
   border-radius: 50%;
-  background: rgba(168, 85, 247, 0.72);
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(214, 255, 74, 0.25);
   transform: translate(-50%, -50%);
   cursor: pointer;
 }
 
 .spot:hover,
 body.moving-spots .spot {
-  background: #c084fc;
+  background: #ffffff;
 }
 
 body.moving-spots .spot {
@@ -336,13 +450,6 @@ body.moving-spots .spot {
 .plan-open {
   display: block;
   margin: 1.25rem auto 0;
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.8rem 1.2rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
-  cursor: pointer;
 }
 
 .plan-panel {
@@ -358,16 +465,7 @@ body.moving-spots .spot {
 .plan-tools button,
 .plan-remove,
 .plan-add {
-  border: 1px solid var(--line);
-  border-radius: 0.45rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
-  cursor: pointer;
-}
-
-.plan-tools button {
-  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
   font-size: 0.8rem;
 }
 
@@ -380,8 +478,7 @@ body.moving-spots .spot {
 
 .plan-remove,
 .plan-add {
-  padding: 0.2rem 0.45rem;
-  font-size: 0.78rem;
+  padding: 0.35rem 0.6rem;
   line-height: 1.2;
 }
 
@@ -398,7 +495,7 @@ body.moving-spots .spot {
 .plan-scroll {
   overflow-x: auto;
   margin-top: 1rem;
-  scrollbar-color: #c084fc #16081f;
+  scrollbar-color: var(--accent) #10141b;
   scrollbar-width: thin;
 }
 
@@ -417,7 +514,7 @@ body.moving-spots .spot {
   display: block;
   width: min(100%, 28rem);
   margin: 0.7rem auto 0;
-  accent-color: #c084fc;
+  accent-color: var(--accent);
 }
 
 .plan-scroll::-webkit-scrollbar {
@@ -426,17 +523,17 @@ body.moving-spots .spot {
 
 .plan-scroll::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: #c084fc;
+  background: var(--accent);
 }
 
 .plan-scroll::-webkit-scrollbar-track {
-  background: #16081f;
+  background: #10141b;
 }
 
 .plan-cells {
   display: grid;
   grid-template-columns: repeat(var(--plan-columns, 3), minmax(0, 1fr));
-  gap: 1.25rem;
+  gap: 1rem;
   width: 100%;
 }
 
@@ -456,6 +553,9 @@ body.moving-spots .spot {
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
+  padding: 0.8rem;
+  border-radius: 1.1rem;
+  background: var(--card-2);
 }
 
 .plan-row {
@@ -466,18 +566,13 @@ body.moving-spots .spot {
 
 .plan-row input,
 .plan-title {
-  border: 1px solid var(--line);
-  border-radius: 0.45rem;
   min-height: 2.8rem;
-  padding: 0.7rem 0.5rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
 }
 
 .plan-title {
   width: 100%;
   margin-bottom: 0;
+  font-weight: 700;
 }
 
 .plan-head .plan-title {
@@ -501,40 +596,36 @@ body.moving-spots .spot {
   text-align: center;
 }
 
+.nutrition-panel .muscles-title {
+  margin-top: 0;
+}
+
 .nutrition {
   display: block;
   width: 100%;
   min-height: 16rem;
   margin-top: 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.9rem 1rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
   resize: vertical;
 }
 
 .goal {
-  display: grid;
-  gap: 0.45rem;
-  margin-top: 1.4rem;
-  color: var(--accent);
-  text-align: center;
-  font-size: 1.15rem;
+  margin-top: 1.1rem;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .goal-text {
   min-height: 7rem;
   text-align: left;
+  font-weight: 400;
 }
 
 .muscles-title {
-  margin: 2rem 0 0.5rem;
-  text-align: center;
-  color: var(--accent);
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  font-weight: 600;
+  margin: 1.6rem 0 0.6rem;
+  text-align: left;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 740;
 }
 
 .spot-selected {
@@ -551,11 +642,7 @@ body.moving-spots .spot {
 
 .spot-help {
   max-width: 36rem;
-  margin: 0;
-  color: var(--muted);
-  font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 0.95rem;
-  line-height: 1.45;
   text-align: center;
 }
 
@@ -567,33 +654,6 @@ body.moving-spots .spot {
   width: min(46rem, 100%);
 }
 
-.spot-tools label {
-  display: grid;
-  gap: 0.3rem;
-  color: var(--accent);
-  text-align: left;
-}
-
-.spot-tools input,
-.spot-tools select {
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.55rem 0.7rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
-}
-
-.spot-edit button {
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.7rem 1rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
-  cursor: pointer;
-}
-
 .modal {
   position: fixed;
   inset: 0;
@@ -601,7 +661,7 @@ body.moving-spots .spot {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(5, 7, 12, 0.72);
 }
 
 .modal[hidden],
@@ -613,13 +673,17 @@ body.moving-spots .spot {
   width: min(36rem, 100%);
   padding: 1.25rem;
   border: 1px solid var(--line);
-  border-radius: 1rem;
-  background: #000000;
+  border-radius: 1.4rem;
+  background: #12161e;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
 }
 
 .body-views figcaption {
-  margin-top: 0.4rem;
-  color: var(--accent);
+  margin-top: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .muscle-buttons {
@@ -631,60 +695,30 @@ body.moving-spots .spot {
   max-width: 46rem;
 }
 
-.muscle-buttons button,
-.muscle-view textarea,
-.muscle-view input {
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
-}
-
 .muscle-buttons button {
   padding: 0.7rem 1rem;
   cursor: pointer;
 }
 
 .muscle-buttons button:hover {
-  background: rgba(168, 85, 247, 0.22);
+  background: rgba(214, 255, 74, 0.16);
 }
 
 .muscle-view {
-  display: grid;
-  gap: 1rem;
   max-width: 36rem;
-  margin-top: 1.5rem;
-}
-
-.muscle-view label {
-  display: grid;
-  gap: 0.4rem;
-  color: var(--accent);
+  margin-top: 0.4rem;
 }
 
 .muscle-view textarea,
 .muscle-view input {
-  padding: 0.8rem 1rem;
   width: 100%;
 }
 
-.day-button {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.day-view h2 {
-  margin: 1.25rem 0;
-  color: var(--accent);
+.day-view h2,
+.stats-view h2 {
+  margin: 0.4rem 0 1rem;
   font-size: clamp(1.6rem, 4vw, 2.1rem);
-  font-weight: 600;
+  font-weight: 740;
 }
 
 .day-summary {
@@ -698,21 +732,21 @@ body.moving-spots .spot {
 
 .choices {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
   max-width: 22rem;
 }
 
 .choices button {
-  border-radius: 0.6rem;
-  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
   text-align: left;
-  color: var(--ink);
-  background: #0d0616;
 }
 
 .choices button[aria-pressed='true'],
 .gym-answers button[aria-pressed='true'] {
-  background: rgba(168, 85, 247, 0.28);
+  border-color: transparent;
+  background: var(--accent);
+  color: #14180c;
 }
 
 .calendar-actions {
@@ -720,7 +754,7 @@ body.moving-spots .spot {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.75rem;
-  margin-top: 0.35rem;
+  margin-top: 0.75rem;
 }
 
 .day-view,
@@ -731,30 +765,7 @@ body.moving-spots .spot {
 
 .day-extra,
 .follow-up {
-  display: grid;
-  gap: 0.75rem;
   margin-top: 1rem;
-}
-
-.follow-up p,
-.stat-line {
-  margin: 0;
-}
-
-.follow-up label {
-  display: grid;
-  gap: 0.35rem;
-  color: var(--accent);
-}
-
-.follow-up input,
-.follow-up select {
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.7rem 0.85rem;
-  color: var(--ink);
-  background: #0d0616;
-  font: inherit;
 }
 
 .gym-answers,
@@ -764,27 +775,27 @@ body.moving-spots .spot {
   gap: 0.6rem;
 }
 
-.stats-view h2 {
-  margin: 1.25rem 0 1rem;
-  color: var(--accent);
-}
-
 #stats-body {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
+}
+
+.stat-block {
+  padding: 0.9rem;
+  border-radius: 1.1rem;
+  background: var(--card-2);
 }
 
 .stat-block h3 {
-  margin: 0 0 0.6rem;
-  color: var(--accent);
-  font-size: 1.15rem;
+  margin: 0 0 0.7rem;
+  font-size: 1rem;
 }
 
 .bar-chart {
   display: flex;
   align-items: end;
   gap: 0.7rem;
-  height: 10rem;
+  height: 11rem;
   overflow-x: auto;
 }
 
@@ -794,34 +805,32 @@ body.moving-spots .spot {
   align-items: center;
   justify-content: end;
   height: 100%;
-  min-width: 3.4rem;
-  gap: 0.3rem;
+  min-width: 3.2rem;
+  gap: 0.35rem;
 }
 
 .bar {
-  width: 1.5rem;
+  width: 1.35rem;
   min-height: 0.45rem;
-  border-radius: 0.35rem 0.35rem 0 0;
-  background: #c084fc;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent), #8fbf1d);
 }
 
 .bar-col span {
   color: var(--muted);
-  font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 0.72rem;
   text-align: center;
 }
 
 .achieve-list {
   display: grid;
-  gap: 0.4rem;
-  margin: 0;
-  padding-left: 1.15rem;
+  gap: 0.45rem;
+  color: var(--ink);
 }
 
 @media (max-width: 40rem) {
   main {
-    padding-top: 4.5rem;
+    padding-top: 4.75rem;
   }
 
   .calendar-nav {
@@ -833,12 +842,20 @@ body.moving-spots .spot {
     order: -1;
   }
 
-  th {
-    font-size: 0.62rem;
+  .day-name {
+    display: none;
   }
 
-  td {
-    height: 2.4rem;
+  .day-short {
+    display: inline;
+    font-size: 0.78rem;
+  }
+
+  td,
+  .day-number,
+  .day-button {
+    height: 2.45rem;
+    line-height: 2.45rem;
   }
 
   .plan-cells {

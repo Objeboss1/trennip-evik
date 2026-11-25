@@ -171,10 +171,11 @@ function render() {
       const choice = choices[key]
       const mark = markClass(choice)
       const locked = lockedClass(key)
+      const todayMark = key === todayStamp ? ' day-today' : ''
       const content = locked
         ? `<span class="day-number">${date}</span>`
         : `<button type="button" class="day-button" data-date="${key}">${date}</button>`
-      cells.push(`<td class="day${mark}${locked}">${content}</td>`)
+      cells.push(`<td class="day${mark}${locked}${todayMark}">${content}</td>`)
     }
     if (index % 7 === 6) cells.push('</tr>')
   }
