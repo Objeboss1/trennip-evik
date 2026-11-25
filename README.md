@@ -1,12 +1,17 @@
 # Treeningpäevik
 
-A local HTML training diary. The start page is a month calendar with today's date and a live clock. Today and future dates open a day view with four choices, saved in localStorage. Past dates keep a saved mark and cannot be changed. The muscle map, full day plan, and nutrition parts are not built yet.
+Kalender, treeningkava, lihased ja toitumine. Kontod ja päevikud salvestuvad firstadvice.ee PostgreSQL-i andmebaasi `firstadv_sport`, tabelisse `kasutajad`.
 
-## Run locally
+## Kohalik vaade
 
 ```bash
 npm install
+php -S 127.0.0.1:8081 -t .
 npm run dev
 ```
 
-The dev server listens on `0.0.0.0:43123`. Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+Arenduses loeb `api/config.local.php` andmebaasi seaded. Serveris loeb `api/config.php`.
+
+## Firstadvice
+
+Laadi `npm run build` tulemus (`dist` kausta sisu) kausta `public_html`. Laadi kaust `api` kausta `public_html/api`. Kustuta vana `public_html/index.php`, et avaneks uus `index.html`. Andmebaasi parool kirjuta serveris faili `api/config.local.php`, mitte veebilehe koodi.
