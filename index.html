@@ -75,9 +75,12 @@
       </div>
     </section>
     <main>
-      <h1>Trennipäevik</h1>
-      <p id="now" class="now"></p>
-      <section id="calendar" class="calendar" aria-labelledby="month-label">
+      <header class="hero">
+        <p class="eyebrow">Treening</p>
+        <h1>Trennipäevik</h1>
+        <p id="now" class="now"></p>
+      </header>
+      <section id="calendar" class="calendar panel" aria-labelledby="month-label">
         <div class="calendar-nav">
           <button type="button" data-nav="prev">Eelmine kuu</button>
           <h2 id="month-label"></h2>
@@ -86,13 +89,13 @@
         <table>
           <thead>
             <tr>
-              <th scope="col">Esmas&shy;päev</th>
-              <th scope="col">Teisi&shy;päev</th>
-              <th scope="col">Kolma&shy;päev</th>
-              <th scope="col">Nelja&shy;päev</th>
-              <th scope="col">Reede</th>
-              <th scope="col">Lau&shy;päev</th>
-              <th scope="col">Püha&shy;päev</th>
+              <th scope="col" title="Esmaspäev"><span class="day-name">Esmaspäev</span><span class="day-short">E</span></th>
+              <th scope="col" title="Teisipäev"><span class="day-name">Teisipäev</span><span class="day-short">T</span></th>
+              <th scope="col" title="Kolmapäev"><span class="day-name">Kolmapäev</span><span class="day-short">K</span></th>
+              <th scope="col" title="Neljapäev"><span class="day-name">Neljapäev</span><span class="day-short">N</span></th>
+              <th scope="col" title="Reede"><span class="day-name">Reede</span><span class="day-short">R</span></th>
+              <th scope="col" title="Laupäev"><span class="day-name">Laupäev</span><span class="day-short">L</span></th>
+              <th scope="col" title="Pühapäev"><span class="day-name">Pühapäev</span><span class="day-short">P</span></th>
             </tr>
           </thead>
           <tbody id="days"></tbody>
@@ -102,7 +105,7 @@
         </div>
       </section>
       <button type="button" class="plan-open" id="plan-open">Treeningkava</button>
-      <div id="plan-panel" class="plan-panel" hidden>
+      <div id="plan-panel" class="plan-panel panel" hidden>
         <div class="plan-tools">
           <button type="button" id="plan-edit">Muuda</button>
           <button type="button" id="plan-add-column" hidden>Lisa veerg</button>
@@ -113,7 +116,7 @@
         <input id="plan-range" class="plan-range" type="range" min="0" max="0" value="0" hidden aria-label="Keri treeningkava" />
       </div>
       <h2 class="muscles-title">Lihased</h2>
-      <section class="body-views" aria-label="Keha">
+      <section class="body-views panel" aria-label="Keha">
         <figure>
           <div class="shot" data-view="eest">
             <img src="/eest.png?v=2" alt="Eest" />
@@ -170,12 +173,14 @@
           <button type="button" id="save-spots">Salvesta</button>
         </div>
       </div>
-      <h2 class="muscles-title">Toitumine</h2>
-      <textarea id="nutrition" class="nutrition" rows="10"></textarea>
-      <label class="goal">
-        Mida tahan saavutada ja mis ajaga
-        <textarea id="goal" class="nutrition goal-text" rows="4"></textarea>
-      </label>
+      <section class="panel nutrition-panel">
+        <h2 class="muscles-title">Toitumine</h2>
+        <textarea id="nutrition" class="nutrition" rows="10"></textarea>
+        <label class="goal">
+          Mida tahan saavutada ja mis ajaga
+          <textarea id="goal" class="nutrition goal-text" rows="4"></textarea>
+        </label>
+      </section>
       <div id="muscle" class="modal" hidden>
         <div class="modal-card muscle-view">
           <button type="button" class="back" id="muscle-back">Sulge</button>
