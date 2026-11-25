@@ -183,12 +183,22 @@ function render() {
   days.innerHTML = cells.join('')
 }
 
+function showView(name) {
+  for (const section of document.querySelectorAll('[data-section]')) {
+    section.hidden = section.dataset.section !== name
+  }
+  for (const button of document.querySelectorAll('.section-nav button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.view === name))
+  }
+  if (name === 'calendar') render()
+  if (name === 'plan') renderPlan()
+  if (name === 'records') renderStats()
+}
+
 function showCalendar() {
   dayView.hidden = true
   muscleView.hidden = true
-  bodyViews.hidden = false
-  calendar.hidden = false
-  render()
+  showView('calendar')
 }
 
 function daySummaryText(details) {
@@ -341,7 +351,6 @@ const runPace = document.querySelector('#run-pace')
 const runAmount = document.querySelector('#run-amount')
 const gymNote = document.querySelector('#gym-note')
 const dayChoices = document.querySelector('#day-choices')
-const statsView = document.querySelector('#stats')
 const statsBody = document.querySelector('#stats-body')
 let followStep = 'run'
 
@@ -508,15 +517,6 @@ function renderStats() {
   }
   statsBody.append(gymBlock)
 }
-
-document.querySelector('#stats-open').addEventListener('click', () => {
-  renderStats()
-  statsView.hidden = false
-})
-
-document.querySelector('#stats-close').addEventListener('click', () => {
-  statsView.hidden = true
-})
 
 muscles = loadMuscles()
 
@@ -856,13 +856,6 @@ function setPlanEditing(editing) {
   if (!planPanel.hidden) renderPlan()
 }
 
-document.querySelector('#plan-open').addEventListener('click', () => {
-  const opening = planPanel.hidden
-  planPanel.hidden = !opening
-  if (!opening) setPlanEditing(false)
-  else renderPlan()
-})
-
 planEdit.addEventListener('click', () => {
   setPlanEditing(!planEditing)
 })
@@ -1007,10 +1000,16 @@ const accountOpen = document.querySelector('#account-open')
 const accountPanel = document.querySelector('#account-panel')
 const infoPage = document.querySelector('#info-page')
 
-document.querySelector('#info-open').addEventListener('click', () => {
+document.querySelector('#settings-open').addEventListener('click', () => {
   accountPanel.hidden = true
   infoPage.hidden = false
   document.querySelector('#info-close').focus()
+})
+
+document.querySelector('.section-nav').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-view]')
+  if (!button) return
+  showView(button.dataset.view)
 })
 
 document.querySelector('#info-close').addEventListener('click', () => {
