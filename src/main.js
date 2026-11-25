@@ -216,6 +216,7 @@ function showView(name) {
   if (name === 'calendar') render()
   if (name === 'plan') renderPlan()
   if (name === 'records') renderStats()
+  document.dispatchEvent(new CustomEvent('trennip-view', { detail: name }))
 }
 
 function showCalendar() {
@@ -887,6 +888,62 @@ planAddColumn.addEventListener('click', () => {
   planCellsData.push(emptyPlanColumn(1))
   savePlan()
   renderPlan()
+})
+
+let muscle3d = null
+document.querySelector('.muscle-mode').addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-muscle-mode]')
+  if (!button) return
+  const mode = button.dataset.muscleMode
+  document.querySelector('.body-views').hidden = mode === '3d'
+  document.querySelector('.spot-edit').hidden = mode === '3d'
+  const view = document.querySelector('#muscle-3d')
+  view.hidden = mode !== '3d'
+  for (const item of document.querySelectorAll('[data-muscle-mode]')) {
+    item.setAttribute('aria-pressed', String(item === button))
+  }
+  if (mode !== '3d') {
+    muscle3d?.stop()
+    return
+  }
+  if (!muscle3d) {
+    const mod = await import('./muscle3d.js')
+    muscle3d = mod.mountMuscle3d(view)
+  }
+  muscle3d.start()
+})
+
+document.addEventListener('trennip-open-exercise', (event) => {
+  const name = String(event.detail?.name || '').trim()
+  if (!name) return
+  if (!planCellsData.length) planCellsData.push(emptyPlanColumn(1))
+  let columnIndex = 0
+  let rowIndex = -1
+  planCellsData.forEach((column, index) => {
+    if (rowIndex >= 0) return
+    const found = column.rows.findIndex((row) => row.text.trim().toLowerCase() === name.toLowerCase())
+    if (found >= 0) {
+      columnIndex = index
+      rowIndex = found
+    }
+  })
+  if (rowIndex < 0) {
+    const column = planCellsData[0]
+    if (!column.title.trim()) column.title = 'Lihased'
+    const empty = column.rows.findIndex((row) => !row.text.trim())
+    if (empty >= 0) column.rows[empty].text = name
+    else column.rows.push({ text: name, reps: '' })
+    rowIndex = column.rows.findIndex((row) => row.text === name)
+    savePlan()
+  }
+  setPlanEditing(true)
+  showView('plan')
+  requestAnimationFrame(() => {
+    const box = planCells.querySelectorAll('.plan-box')[columnIndex]
+    const field = box?.querySelectorAll('.plan-row input:not(.plan-reps)')[rowIndex]
+    field?.closest('.plan-row')?.scrollIntoView({ block: 'center' })
+    field?.focus()
+  })
 })
 
 const nutrition = document.querySelector('#nutrition')

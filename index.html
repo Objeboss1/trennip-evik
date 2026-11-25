@@ -229,6 +229,30 @@
       </section>
       <section class="panel" data-section="muscles" hidden>
       <h2 class="muscles-title" data-i18n="muscles">Lihased</h2>
+      <div class="muscle-mode">
+        <button type="button" data-muscle-mode="photos" aria-pressed="true"><span data-i18n="musclePhotos">Pildid</span></button>
+        <button type="button" data-muscle-mode="3d" aria-pressed="false"><span data-i18n="muscle3d">3D lihased</span></button>
+      </div>
+      <div id="muscle-3d" class="muscle-3d" hidden>
+        <div class="muscle-stage-column">
+        <div class="muscle-stage">
+          <div class="muscle-toolbar">
+            <button type="button" data-view3="front" aria-pressed="true" data-i18n="front">Eest</button>
+            <button type="button" data-view3="back" aria-pressed="false" data-i18n="backView">Tagant</button>
+            <button type="button" data-view3="side" aria-pressed="false" data-i18n="side">Kõrvalt</button>
+          </div>
+          <div id="muscle-filters" class="muscle-filters"></div>
+          <div class="muscle-canvas-wrap">
+            <canvas id="muscle-canvas"></canvas>
+            <p id="muscle-status" class="muscle-status" data-i18n="muscleLoading">Laen 3D mudelit…</p>
+          </div>
+        </div>
+          <p class="muscle-credit">3D model: <a href="https://www.z-anatomy.com/" target="_blank" rel="noreferrer">Z-Anatomy</a> (CC BY-SA 4.0), based on BodyParts3D © Database Center for Life Science. Adapted in <a href="https://github.com/tiralonghipol/free-muscles" target="_blank" rel="noreferrer">free-muscles</a> by tiralonghipol.</p>
+        </div>
+        <aside id="muscle-info" class="muscle-info">
+          <p class="muscle-empty" data-i18n="musclePick">Vajuta lihasele.</p>
+        </aside>
+      </div>
       <section class="body-views" aria-label="Keha">
         <figure>
           <div class="shot" data-view="eest">

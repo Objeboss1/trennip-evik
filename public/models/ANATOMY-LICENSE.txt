@@ -1,0 +1,23 @@
+public/models/anatomy.glb
+
+Derived from Z-Anatomy (https://www.z-anatomy.com/ and
+https://github.com/LluisV/Z-Anatomy-Sample), itself based on BodyParts3D
+(© The Database Center for Life Science).
+
+Licensed under Creative Commons Attribution-ShareAlike 4.0 International:
+https://creativecommons.org/licenses/by-sa/4.0/
+
+The file used here is the Draco-compressed anatomy.glb built by the
+free-muscles project (https://github.com/tiralonghipol/free-muscles,
+copyright tiralonghipol). That project extracted muscles and bones, removed
+connective tissue, decimated the mesh, added muscle-group metadata and
+compressed the file with Draco.
+
+Any redistributed or modified version of this model must stay under
+CC BY-SA 4.0 and must credit Z-Anatomy.
+
+The app shows this credit next to the 3D view.
+
+public/draco/
+Draco decoder files shipped with three.js. Draco is © Google, Apache License 2.0.
+three.js is © Mr.doob and contributors, MIT License.
