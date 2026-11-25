@@ -469,68 +469,34 @@ function dateLabel(key) {
   return `${dayNumber}. ${months()[monthNumber - 1]}`
 }
 
-function paceSeconds(pace) {
-  const match = String(pace).match(/(\d+):(\d+)/)
-  if (!match) return 0
-  return Number(match[1]) * 60 + Number(match[2])
-}
-
 function amountNumber(amount) {
   const match = String(amount).replace(',', '.').match(/(\d+(?:\.\d+)?)/)
   return match ? Number(match[1]) : 0
 }
 
-function barChart(title, items, emptyText) {
-  const block = document.createElement('section')
-  block.className = 'stat-block'
-  const heading = document.createElement('h3')
-  heading.textContent = title
-  block.append(heading)
-  if (!items.length) {
-    const empty = document.createElement('p')
-    empty.className = 'stat-line'
-    empty.textContent = emptyText
-    block.append(empty)
-    return block
-  }
-  const max = Math.max(...items.map((item) => item.value))
-  const chart = document.createElement('div')
-  chart.className = 'bar-chart'
-  for (const item of items) {
-    const column = document.createElement('div')
-    column.className = 'bar-col'
-    const value = document.createElement('span')
-    value.textContent = item.text
-    const bar = document.createElement('div')
-    bar.className = 'bar'
-    bar.style.height = `${Math.max(12, (item.value / max) * 100)}%`
-    const label = document.createElement('span')
-    label.textContent = item.label
-    column.append(value, bar, label)
-    chart.append(column)
-  }
-  block.append(chart)
-  return block
+const RECORDS_KEY = 'treeningpaevik-rekordid'
+const RECORD_KEYS = ['record1k', 'record5k', 'record10k', 'recordLong', 'recordTotal', 'recordRideLong', 'recordRideTotal']
+
+function defaultRecords() {
+  return { items: RECORD_KEYS.map((key) => ({ id: key, key, title: '', value: '' })) }
 }
 
-const RECORDS_KEY = 'treeningpaevik-rekordid'
-const MANUAL_RECORDS = [
-  { id: 'bench', label: 'recordBench', unit: 'recordKg' },
-  { id: 'squat', label: 'recordSquat', unit: 'recordKg' },
-  { id: 'deadlift', label: 'recordDead', unit: 'recordKg' },
-  { id: 'pullups', label: 'recordPull', unit: 'recordReps' },
-  { id: 'plank', label: 'recordPlank', unit: 'recordMin' },
-]
-
 function emptyRecords() {
-  return { bench: '', squat: '', deadlift: '', pullups: '', plank: '' }
+  return defaultRecords()
 }
 
 function loadRecordsFrom(saved) {
-  const next = emptyRecords()
-  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return next
-  for (const key of Object.keys(next)) next[key] = String(saved[key] || '').slice(0, 8)
-  return next
+  if (!saved || typeof saved !== 'object' || !Array.isArray(saved.items)) return defaultRecords()
+  return {
+    items: saved.items
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => ({
+        id: String(item.id || `custom-${Date.now()}`).slice(0, 40),
+        key: typeof item.key === 'string' ? item.key.slice(0, 40) : '',
+        title: String(item.title || '').slice(0, 60),
+        value: String(item.value || '').slice(0, 40),
+      })),
+  }
 }
 
 let recordsState = loadRecordsFrom(loadJson(RECORDS_KEY))
@@ -540,186 +506,66 @@ function saveRecords() {
   pushDiary()
 }
 
-function activityEntries(type) {
-  const today = stampFromDate(new Date())
-  return Object.entries(choices)
-    .filter(([key]) => key <= today)
-    .map(([key, entry]) => {
-      const item = activitiesOf(entry).find((activity) => activity.type === type)
-      return item ? { key, ...item } : null
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.key.localeCompare(b.key))
-}
-
-function runEntries() {
-  return activityEntries('run')
-}
-
-function rideEntries() {
-  return activityEntries('ride')
-}
-
-function formatClock(seconds) {
-  const total = Math.round(seconds)
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  const rest = total % 60
-  if (hours) return `${hours}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
-  return `${minutes}:${String(rest).padStart(2, '0')}`
-}
-
-function bestPace(entries) {
-  return entries
-    .filter((entry) => paceSeconds(entry.pace))
-    .sort((a, b) => paceSeconds(a.pace) - paceSeconds(b.pace))[0] || null
-}
-
-function bestDistanceTime(entries, kilometres) {
-  return entries
-    .filter((entry) => amountNumber(entry.amount) >= kilometres && paceSeconds(entry.pace))
-    .map((entry) => ({ ...entry, seconds: paceSeconds(entry.pace) * kilometres }))
-    .sort((a, b) => a.seconds - b.seconds)[0] || null
-}
-
-function recordCard(title, value, detail) {
-  const card = document.createElement('article')
-  card.className = 'record-card'
-  const heading = document.createElement('h3')
-  heading.textContent = title
-  const number = document.createElement('p')
-  number.className = 'record-value'
-  if (!value) number.classList.add('is-empty')
-  number.textContent = value || t('recordEmpty')
-  card.append(heading, number)
-  if (detail) {
-    const note = document.createElement('small')
-    note.textContent = detail
-    card.append(note)
-  }
-  return card
+function recordTitle(item) {
+  if (item.key) return t(item.key)
+  return item.title
 }
 
 function renderStats() {
-  const runs = runEntries()
-  const rides = rideEntries()
-  const fastestKm = bestPace(runs)
-  const fastest5 = bestDistanceTime(runs, 5)
-  const fastest10 = bestDistanceTime(runs, 10)
-  const longest = runs.filter((entry) => amountNumber(entry.amount)).sort((a, b) => amountNumber(b.amount) - amountNumber(a.amount))[0]
-  const total = Math.round(runs.reduce((sum, entry) => sum + amountNumber(entry.amount), 0) * 10) / 10
-  const longestRide = rides.filter((entry) => amountNumber(entry.amount)).sort((a, b) => amountNumber(b.amount) - amountNumber(a.amount))[0]
-  const rideTotal = Math.round(rides.reduce((sum, entry) => sum + amountNumber(entry.amount), 0) * 10) / 10
-  const auto = document.createElement('section')
-  auto.className = 'record-head'
-  const autoTitle = document.createElement('h3')
-  autoTitle.textContent = t('recordsAuto')
-  const autoHint = document.createElement('p')
-  autoHint.textContent = t('recordsHint')
+  const section = document.createElement('section')
+  section.className = 'record-head'
+  const heading = document.createElement('h3')
+  heading.textContent = t('recordsAuto')
+  const hint = document.createElement('p')
+  hint.textContent = t('recordsHint')
   const grid = document.createElement('div')
   grid.className = 'record-grid'
-  grid.append(
-    recordCard('record1k', fastestKm ? fastestKm.pace : '', fastestKm ? dateLabel(fastestKm.key) : t('recordNeedPace')),
-    recordCard('record5k', fastest5 ? formatClock(fastest5.seconds) : '', fastest5 ? `${dateLabel(fastest5.key)}. ${t('recordFromPace')}` : t('recordNeed5')),
-    recordCard('record10k', fastest10 ? formatClock(fastest10.seconds) : '', fastest10 ? `${dateLabel(fastest10.key)}. ${t('recordFromPace')}` : t('recordNeed10')),
-    recordCard('recordLong', longest ? `${amountNumber(longest.amount)} km` : '', longest ? dateLabel(longest.key) : t('recordNeedDistance')),
-    recordCard('recordTotal', total ? `${Number.isInteger(total) ? total : total.toFixed(1)} km` : '', total ? '' : t('recordNeedDistance')),
-    recordCard(
-      'recordRideLong',
-      longestRide ? `${amountNumber(longestRide.amount)} km` : '',
-      longestRide ? dateLabel(longestRide.key) : t('recordNeedRide'),
-    ),
-    recordCard(
-      'recordRideTotal',
-      rideTotal ? `${Number.isInteger(rideTotal) ? rideTotal : rideTotal.toFixed(1)} km` : '',
-      rideTotal ? '' : t('recordNeedRide'),
-    ),
-  )
-  for (const card of grid.querySelectorAll('h3')) card.textContent = t(card.textContent)
-  auto.append(autoTitle, autoHint, grid)
-
-  const manual = document.createElement('section')
-  manual.className = 'record-manual'
-  const manualTitle = document.createElement('h3')
-  manualTitle.textContent = t('recordsManual')
-  const manualHint = document.createElement('p')
-  manualHint.textContent = t('recordsManualHint')
-  const manualGrid = document.createElement('div')
-  manualGrid.className = 'record-manual-grid'
-  for (const field of MANUAL_RECORDS) {
-    const label = document.createElement('label')
-    const name = document.createElement('span')
-    name.textContent = `${t(field.label)} (${t(field.unit)})`
-    const input = document.createElement('input')
-    input.inputMode = 'decimal'
-    input.value = recordsState[field.id]
-    input.addEventListener('change', () => {
-      const match = String(input.value).replace(',', '.').match(/\d{0,4}(?:\.\d)?/)
-      recordsState[field.id] = match ? match[0].replace(/\.$/, '') : ''
-      input.value = recordsState[field.id]
+  for (const item of recordsState.items) {
+    const card = document.createElement('article')
+    card.className = 'record-card'
+    const title = document.createElement('input')
+    title.className = 'record-title'
+    title.value = recordTitle(item)
+    title.placeholder = t('recordTitle')
+    title.addEventListener('input', () => {
+      item.key = ''
+      item.title = title.value.slice(0, 60)
       saveRecords()
     })
-    label.append(name, input)
-    manualGrid.append(label)
-  }
-  manual.append(manualTitle, manualHint, manualGrid)
-
-  const achievements = Object.entries(choices)
-    .map(([key, entry]) => {
-      const weights = activitiesOf(entry).find((item) => item.type === 'weights' && item.note)
-      return weights ? { key, gymNote: weights.note } : null
+    const value = document.createElement('input')
+    value.className = 'record-value-input'
+    value.value = item.value
+    value.placeholder = t('recordValue')
+    value.addEventListener('input', () => {
+      item.value = value.value.slice(0, 40)
+      saveRecords()
     })
-    .filter(Boolean)
-    .sort((a, b) => a.key.localeCompare(b.key))
-
-  const distanceBars = runs
-    .filter((entry) => amountNumber(entry.amount))
-    .map((entry) => ({
-      label: dateLabel(entry.key),
-      text: entry.amount,
-      value: amountNumber(entry.amount),
-    }))
-  const paceBars = runs
-    .filter((entry) => paceSeconds(entry.pace))
-    .map((entry) => ({
-      label: dateLabel(entry.key),
-      text: entry.pace,
-      value: paceSeconds(entry.pace),
-    }))
-
-  const distanceChart = barChart(t('statsDistance'), distanceBars, t('statsEmptyDistance'))
-  if (distanceBars.length) {
-    const summed = distanceBars.reduce((sum, item) => sum + item.value, 0)
-    const average = Math.round((summed / distanceBars.length) * 10) / 10
-    const line = document.createElement('p')
-    line.className = 'stat-line'
-    line.textContent = `${t('average')}: ${Number.isInteger(average) ? average : average.toFixed(1)} km`
-    distanceChart.append(line)
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'record-remove'
+    remove.textContent = t('removeActivity')
+    remove.addEventListener('click', () => {
+      recordsState.items = recordsState.items.filter((entry) => entry.id !== item.id)
+      saveRecords()
+      renderStats()
+    })
+    card.append(title, value, remove)
+    grid.append(card)
   }
-  statsBody.replaceChildren(auto, manual, distanceChart, barChart(t('paceTitle'), paceBars, t('statsEmptyPace')))
-
-  const gymBlock = document.createElement('section')
-  gymBlock.className = 'stat-block'
-  const gymHeading = document.createElement('h3')
-  gymHeading.textContent = t('gymAchieved')
-  gymBlock.append(gymHeading)
-  if (!achievements.length) {
-    const empty = document.createElement('p')
-    empty.className = 'stat-line'
-    empty.textContent = t('gymEmpty')
-    gymBlock.append(empty)
-  } else {
-    const list = document.createElement('ul')
-    list.className = 'achieve-list'
-    for (const entry of achievements) {
-      const item = document.createElement('li')
-      item.textContent = `${dateLabel(entry.key)}: ${entry.gymNote}`
-      list.append(item)
-    }
-    gymBlock.append(list)
-  }
-  statsBody.append(gymBlock)
+  const add = document.createElement('button')
+  add.type = 'button'
+  add.className = 'records-add'
+  add.textContent = t('recordsAdd')
+  add.addEventListener('click', () => {
+    recordsState.items.push({ id: `custom-${Date.now()}`, key: '', title: '', value: '' })
+    saveRecords()
+    renderStats()
+    document.querySelector('.record-grid .record-card:last-child .record-title')?.focus()
+  })
+  section.append(heading, hint, grid, add)
+  statsBody.replaceChildren(section)
 }
+
 
 muscles = loadMuscles()
 
