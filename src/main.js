@@ -1033,7 +1033,8 @@ function emptyGoals() {
     caloriesOn: false,
     runOn: false,
     gymOn: false,
-    gymEvery: 2,
+    runTimes: 3,
+    gymTimes: 3,
     waterOn: false,
     waterGlasses: 8,
     log: {},
@@ -1054,7 +1055,8 @@ function loadGoalsFrom(saved) {
   next.caloriesOn = Boolean(saved.caloriesOn)
   next.runOn = Boolean(saved.runOn)
   next.gymOn = Boolean(saved.gymOn)
-  next.gymEvery = clampNumber(saved.gymEvery, 1, 4, 2)
+  next.runTimes = clampNumber(saved.runTimes, 1, 7, 3)
+  next.gymTimes = clampNumber(saved.gymTimes, 1, 7, 3)
   next.waterOn = Boolean(saved.waterOn)
   next.waterGlasses = clampNumber(saved.waterGlasses, 1, 20, 8)
   next.log = saved.log && typeof saved.log === 'object' && !Array.isArray(saved.log) ? saved.log : {}
@@ -1127,7 +1129,64 @@ function weekDots(met) {
   return row
 }
 
-function goalCard(title, flag, fill) {
+function weekStart(stamp) {
+  const [year, month, day] = stamp.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7))
+  return stampFromDate(date)
+}
+
+function weekKeysFrom(start) {
+  return Array.from({ length: 7 }, (_, index) => shiftStamp(start, index))
+}
+
+function markCount(kind, keys) {
+  return keys.filter((key) => readGoalLog(key)[kind]).length
+}
+
+function toggleMark(kind, key) {
+  if (key > todayKey()) return
+  const current = { ...readGoalLog(key) }
+  if (current[kind]) delete current[kind]
+  else current[kind] = true
+  if (Object.keys(current).length) goalsState.log[key] = current
+  else delete goalsState.log[key]
+  saveGoals()
+  renderGoals()
+  if (!document.querySelector('#week').hidden) renderWeek()
+}
+
+function weekMarkRow(kind, start = weekStart(todayKey())) {
+  const row = document.createElement('div')
+  row.className = 'goal-week'
+  for (const key of weekKeysFrom(start)) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = weekdayShort(key)
+    button.setAttribute('aria-pressed', String(Boolean(readGoalLog(key)[kind])))
+    button.disabled = key > todayKey()
+    button.addEventListener('click', () => toggleMark(kind, key))
+    row.append(button)
+  }
+  return row
+}
+
+function timesField(key) {
+  const input = document.createElement('input')
+  input.type = 'number'
+  input.min = '1'
+  input.max = '7'
+  input.step = '1'
+  input.value = String(goalsState[key])
+  input.addEventListener('change', () => {
+    goalsState[key] = clampNumber(input.value, 1, 7, goalsState[key])
+    saveGoals()
+    renderGoals()
+  })
+  return goalField(t('goalTimes'), input)
+}
+
+function goalCard(title, flag, fill, score) {
   const card = document.createElement('article')
   card.className = 'goal-card'
   const header = document.createElement('header')
@@ -1144,7 +1203,14 @@ function goalCard(title, flag, fill) {
     saveGoals()
     renderGoals()
   })
-  header.append(heading, button)
+  if (score) {
+    const titles = document.createElement('div')
+    const line = document.createElement('p')
+    line.className = 'goal-score'
+    line.textContent = score
+    titles.append(heading, line)
+    header.append(titles, button)
+  } else header.append(heading, button)
   card.append(header)
   if (on) {
     const body = document.createElement('div')
@@ -1217,38 +1283,18 @@ function renderGoals() {
       bar.append(fill)
       body.append(status, bar)
     }),
-    goalCard(t('goalRun'), 'runOn', (body) => {
-      const keys = recentKeys(7)
-      const met = keys.filter((key) => hasActivity(choices[key], 'run')).length
-      const status = document.createElement('p')
-      status.className = 'goal-status'
-      status.textContent = `${met}/7. ${hasActivity(choices[todayKey()], 'run') ? t('goalMet') : t('goalOpen')}`
-      body.append(status, weekDots((key) => hasActivity(choices[key], 'run')))
-    }),
-    goalCard(t('goalGym'), 'gymOn', (body) => {
-      const select = document.createElement('select')
-      for (const days of [1, 2, 3, 4]) {
-        const option = document.createElement('option')
-        option.value = String(days)
-        option.textContent = String(days)
-        if (days === goalsState.gymEvery) option.selected = true
-        select.append(option)
-      }
-      select.addEventListener('change', () => {
-        goalsState.gymEvery = clampNumber(select.value, 1, 4, 2)
-        saveGoals()
-        renderGoals()
-      })
-      const last = Object.keys(choices).filter((key) => key <= todayKey() && hasActivity(choices[key], 'weights')).sort().at(-1) || ''
-      const status = document.createElement('p')
-      status.className = 'goal-status'
-      if (!last) status.textContent = t('goalGymNone')
-      else {
-        const gap = dayDistance(last, todayKey())
-        status.textContent = `${t('goalLast')} ${dateLabel(last)}. ${gap <= goalsState.gymEvery ? t('goalGymOk') : t('goalGymDue')}`
-      }
-      body.append(goalField(t('goalGymEvery'), select), status, weekDots((key) => hasActivity(choices[key], 'weights')))
-    }),
+    goalCard(
+      t('goalRun'),
+      'runOn',
+      (body) => body.append(timesField('runTimes'), weekMarkRow('run')),
+      goalsState.runOn ? `${markCount('run', weekKeysFrom(weekStart(todayKey())))}/${goalsState.runTimes} ${t('goalDone')}` : '',
+    ),
+    goalCard(
+      t('goalGym'),
+      'gymOn',
+      (body) => body.append(timesField('gymTimes'), weekMarkRow('gym')),
+      goalsState.gymOn ? `${markCount('gym', weekKeysFrom(weekStart(todayKey())))}/${goalsState.gymTimes} ${t('goalDone')}` : '',
+    ),
     goalCard(t('goalWater'), 'waterOn', (body) => {
       const glasses = document.createElement('input')
       glasses.type = 'number'
@@ -1290,6 +1336,113 @@ function renderGoals() {
       body.append(row, status, weekDots((key) => Number(readGoalLog(key).water) >= goalsState.waterGlasses && readGoalLog(key).water !== undefined))
     }),
   )
+}
+
+let weekCursor = ''
+
+function weekRange(start) {
+  const end = shiftStamp(start, 6)
+  const [, startMonth, startDay] = start.split('-').map(Number)
+  const [, endMonth, endDay] = end.split('-').map(Number)
+  const names = months()
+  return startMonth === endMonth
+    ? `${startDay}.–${endDay}. ${names[startMonth - 1]}`
+    : `${startDay}. ${names[startMonth - 1]} – ${endDay}. ${names[endMonth - 1]}`
+}
+
+function weekLine(text) {
+  const row = document.createElement('p')
+  row.className = 'week-line'
+  row.textContent = text
+  return row
+}
+
+function weekBlock(title) {
+  const section = document.createElement('section')
+  section.className = 'week-block'
+  const heading = document.createElement('h3')
+  heading.textContent = title
+  section.append(heading)
+  return section
+}
+
+function weekFoodLine(item) {
+  const food = item.id ? foodById(item.id) : null
+  const name = food ? nutritionText(food) : item.name
+  const unit = food?.kind === 'drink' ? t('nutritionMl') : 'g'
+  const amount = item.amount ? `${item.amount} ${unit}` : ''
+  return [name, amount, `${item.kcal} kcal`].filter(Boolean).join(' · ')
+}
+
+function renderWeek() {
+  const start = weekCursor || weekStart(todayKey())
+  weekCursor = start
+  const keys = weekKeysFrom(start)
+  const end = keys[6]
+  const range = weekRange(start)
+  const current = start === weekStart(todayKey())
+  document.querySelector('#week-label').textContent = current ? t('thisWeek') : range
+  document.querySelector('#week-range').textContent = current ? range : ''
+  document.querySelector('#week-next').disabled = start >= weekStart(todayKey())
+  const root = document.querySelector('#week-body')
+  root.replaceChildren()
+
+  const foodBlock = weekBlock(t('weekNutrition'))
+  let weekKcal = 0
+  for (const key of keys) {
+    const items = Array.isArray(nutritionState.days?.[key]) ? nutritionState.days[key] : []
+    const eaten = items.reduce((sum, item) => sum + (Number(item.kcal) || 0), 0)
+    if (key <= todayKey()) weekKcal += eaten
+    const target = Number(nutritionState.kcal) || 0
+    if (key > todayKey()) foodBlock.append(weekLine(`${weekdayShort(key)} ${dateLabel(key)} · ${t('weekFuture')}`))
+    else if (!items.length) foodBlock.append(weekLine(`${weekdayShort(key)} ${dateLabel(key)} · ${t('weekEmptyFood')}`))
+    else foodBlock.append(weekLine(`${weekdayShort(key)} ${dateLabel(key)} · ${eaten}${target ? ` / ${target}` : ''} kcal`))
+    for (const item of items) foodBlock.append(weekLine(weekFoodLine(item)))
+  }
+  foodBlock.append(weekLine(`${t('weekTotal')}: ${weekKcal} kcal`))
+  for (const point of nutritionState.body?.weights || []) {
+    if (point.date >= start && point.date <= end) foodBlock.append(weekLine(`${t('weekWeight')} ${point.kg} kg · ${dateLabel(point.date)}`))
+  }
+  root.append(foodBlock)
+
+  const goalBlock = weekBlock(t('weekGoals'))
+  let anyGoal = false
+  if (goalsState.runOn) {
+    anyGoal = true
+    goalBlock.append(weekLine(`${t('goalRun')} ${markCount('run', keys)}/${goalsState.runTimes} ${t('goalDone')}`), weekMarkRow('run', start))
+  }
+  if (goalsState.gymOn) {
+    anyGoal = true
+    goalBlock.append(weekLine(`${t('goalGym')} ${markCount('gym', keys)}/${goalsState.gymTimes} ${t('goalDone')}`), weekMarkRow('gym', start))
+  }
+  if (goalsState.sleepOn) {
+    anyGoal = true
+    const met = keys.filter((key) => key <= todayKey() && Number(readGoalLog(key).sleep) >= goalsState.sleepHours).length
+    goalBlock.append(weekLine(`${t('goalSleep')} ${met}/7 ${t('goalDone')}`))
+  }
+  if (goalsState.waterOn) {
+    anyGoal = true
+    const met = keys.filter((key) => key <= todayKey() && Number(readGoalLog(key).water) >= goalsState.waterGlasses).length
+    goalBlock.append(weekLine(`${t('goalWater')} ${met}/7 ${t('goalDone')}`))
+  }
+  if (goalsState.caloriesOn) {
+    anyGoal = true
+    const met = keys.filter((key) => key <= todayKey() && nutritionState.kcal && eatenOn(key) >= nutritionState.kcal).length
+    goalBlock.append(weekLine(`${t('goalCalories')} ${met}/7 ${t('goalDone')}`))
+  }
+  const note = document.querySelector('#goal').value.trim()
+  if (note) {
+    anyGoal = true
+    goalBlock.append(weekLine(note))
+  }
+  if (!anyGoal) goalBlock.append(weekLine(t('weekNone')))
+  root.append(goalBlock)
+
+  const recordBlock = weekBlock(t('weekRecords'))
+  const filled = recordsState.items.filter((item) => item.value.trim())
+  if (!filled.length) recordBlock.append(weekLine(t('recordEmpty')))
+  for (const item of filled) recordBlock.append(weekLine(`${recordTitle(item) || t('recordTitle')}: ${item.value}`))
+  root.append(recordBlock)
 }
 
 const NUTRITION_KEY = 'treeningpaevik-toitumine'
@@ -2144,6 +2297,7 @@ function refreshLanguage() {
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
   if (!document.querySelector('[data-section="goals"]').hidden) renderGoals()
+  if (!document.querySelector('#week').hidden) renderWeek()
   if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
   if (!muscle3d) paintMuscleFilters()
   renderNutrition()
@@ -2165,6 +2319,28 @@ document.querySelector('#hello-avatar').addEventListener('click', () => {
   infoPage.hidden = true
   accountPanel.hidden = false
   renderAccount()
+})
+
+document.querySelector('#week-open').addEventListener('click', () => {
+  weekCursor = weekStart(todayKey())
+  document.querySelector('#week').hidden = false
+  renderWeek()
+})
+
+document.querySelector('#week-close').addEventListener('click', () => {
+  document.querySelector('#week').hidden = true
+})
+
+document.querySelector('#week-prev').addEventListener('click', () => {
+  weekCursor = shiftStamp(weekCursor, -7)
+  renderWeek()
+})
+
+document.querySelector('#week-next').addEventListener('click', () => {
+  const next = shiftStamp(weekCursor, 7)
+  if (next > weekStart(todayKey())) return
+  weekCursor = next
+  renderWeek()
 })
 
 document.querySelector('#settings-open').addEventListener('click', () => {
