@@ -9,7 +9,7 @@
   <body>
     <div class="account-corner">
       <div class="account-actions">
-        <button type="button" id="info-open">Info</button>
+        <button type="button" id="settings-open">Sätted</button>
         <button type="button" id="account-open">Logi sisse</button>
       </div>
       <div id="account-panel" class="account-panel" hidden>
@@ -51,40 +51,43 @@
     <section id="info-page" class="info-page" hidden aria-labelledby="info-title">
       <button type="button" class="info-close" id="info-close">Sulge</button>
       <div class="info-card">
-        <h2 id="info-title">Kuidas Trennipäevikut kasutada</h2>
-        <p>Siin pead arvet, mida treenisid, mida sööd ja mida tahad saavutada.</p>
-        <h3>Kalender</h3>
-        <p>Vajuta päevale. Tühi päev küsib kohe, mida tegid. Täidetud päev näitab kokkuvõtet ja nuppu Muuda. Täna saab muuta tänast ja eilset. Üleeilsest vanem päev on tuhmim ja sellele ei saa vajutada, olgu see täidetud või mitte. Piir liigub iga päev kellaga edasi.</p>
+        <h2 id="info-title">Sätted</h2>
+        <h3>Värvid</h3>
         <ul>
           <li>Roheline päev tähendab, et käisid jooksmas, jõusaalis või mõlemas.</li>
           <li>Punane päev tähendab, et ei käinud.</li>
+          <li>Oranž rõngas on tänane päev.</li>
+          <li>Tuhm päev on üleeilsest vanem ja seda ei saa enam muuta.</li>
         </ul>
-        <p>Kuu vahetamiseks on nupud Eelmine kuu ja Järgmine kuu.</p>
-        <h3>Jooksmine ja jõusaal</h3>
-        <p>Jooksmine ja Mõlemad küsivad tempo 1 km kohta ning pikkuse 1 kuni 21 km. Jõusaal ja Mõlemad küsivad, mida saavutasid. Valmis salvestab päeva. Sulge paneb akna kinni.</p>
-        <h3>Statistika</h3>
-        <p>Kalendri all on nupp Statistika. Seal on jooksud, keskmine kilomeetrite arv, tempo ja jõusaalis kirja pandud saavutused.</p>
-        <h3>Treeningkava</h3>
-        <p>Nupp Treeningkava avab kava. Muuda laseb lahtritesse kirjutada ning ridu ja veerge lisada või ära võtta. Kui veerge on rohkem kui kolm, saab kava külje peale lohistada. All on ka liugur.</p>
-        <h3>Lihased</h3>
-        <p>Vajuta kehal olevale ringile. Sinna saad kirjutada harjutused ja mitu korda teed. Uue ringi jaoks vajuta Muuda, vali pilt ja siis Lisa ring. Ringi saab lohistada. Lõpuks vajuta Salvesta. Ringi kustutamine on selle ringi aknas.</p>
-        <h3>Toitumine</h3>
-        <p>Toitumise kasti kirjuta, mida sööd. Selle all on kast, kuhu kirjutad, mida tahad saavutada ja mis ajaga.</p>
-        <h3>Konto</h3>
-        <p>Nupp Logi sisse avab sisselogimise. Kui oled juba sees, on sama nupu nimi Konto. Registreeru teeb uue konto ja parool on vähemalt 8 märki. Igal kontol on oma päevik. Ilma kontota jääb päevik sellesse brauserisse.</p>
+        <h3>Andmed</h3>
+        <p>Igal kontol on oma päevik. Ilma kontota jääb päevik sellesse brauserisse. Logi sisse on sätete kõrval. Kui oled sees, on sama nupu nimi Konto.</p>
+        <h3>Kuidas kasutada</h3>
+        <p>Üleval on nupud: Kalender, Treeningkava, Lihased, Toitumine, Eesmärgid ja Rekordid. Iga nupp avab oma osa.</p>
+        <p>Kalendris vajuta päevale. Tühi päev küsib kohe, mida tegid. Täidetud päev näitab kokkuvõtet ja nuppu Muuda. Täna saab muuta tänast ja eilset. Kuu vahetamiseks on nooled kuu nime kõrval.</p>
+        <p>Jooksmine ja Mõlemad küsivad tempo 1 km kohta ning pikkuse 1 kuni 21 km. Jõusaal ja Mõlemad küsivad, mida saavutasid. Valmis salvestab päeva.</p>
+        <p>Treeningkavas vajuta Muuda, siis saab lahtritesse kirjutada ning ridu ja veerge lisada või ära võtta. Kui veerge on rohkem kui kolm, saab kava külje peale lohistada.</p>
+        <p>Lihaste ringile vajutades saad kirjutada harjutused ja mitu korda teed. Uue ringi jaoks vajuta Muuda, vali pilt ja siis Lisa ring.</p>
+        <p>Toitumisse kirjuta, mida sööd. Eesmärkidesse kirjuta, mida tahad saavutada ja mis ajaga. Rekordites on jooksud, keskmine kilomeetrite arv, tempo ja jõusaali saavutused.</p>
       </div>
     </section>
     <main>
       <header class="hero">
-        <p class="eyebrow">Treening</p>
         <h1>Trennipäevik</h1>
         <p id="now" class="now"></p>
       </header>
-      <section id="calendar" class="calendar panel" aria-labelledby="month-label">
+      <nav class="section-nav" aria-label="Lehe osad">
+        <button type="button" data-view="calendar" aria-pressed="true">Kalender</button>
+        <button type="button" data-view="plan">Treeningkava</button>
+        <button type="button" data-view="muscles">Lihased</button>
+        <button type="button" data-view="nutrition">Toitumine</button>
+        <button type="button" data-view="goals">Eesmärgid</button>
+        <button type="button" data-view="records">Rekordid</button>
+      </nav>
+      <section id="calendar" class="calendar panel" data-section="calendar" aria-labelledby="month-label">
         <div class="calendar-nav">
-          <button type="button" data-nav="prev">Eelmine kuu</button>
+          <button type="button" class="month-arrow" data-nav="prev" aria-label="Eelmine kuu">‹</button>
           <h2 id="month-label"></h2>
-          <button type="button" data-nav="next">Järgmine kuu</button>
+          <button type="button" class="month-arrow" data-nav="next" aria-label="Järgmine kuu">›</button>
         </div>
         <table>
           <thead>
@@ -100,12 +103,9 @@
           </thead>
           <tbody id="days"></tbody>
         </table>
-        <div class="calendar-actions">
-          <button type="button" id="stats-open">Statistika</button>
-        </div>
       </section>
-      <button type="button" class="plan-open" id="plan-open">Treeningkava</button>
-      <div id="plan-panel" class="plan-panel panel" hidden>
+      <section class="panel" data-section="plan" hidden>
+      <div id="plan-panel" class="plan-panel">
         <div class="plan-tools">
           <button type="button" id="plan-edit">Muuda</button>
           <button type="button" id="plan-add-column" hidden>Lisa veerg</button>
@@ -115,8 +115,10 @@
         </div>
         <input id="plan-range" class="plan-range" type="range" min="0" max="0" value="0" hidden aria-label="Keri treeningkava" />
       </div>
+      </section>
+      <section class="panel" data-section="muscles" hidden>
       <h2 class="muscles-title">Lihased</h2>
-      <section class="body-views panel" aria-label="Keha">
+      <section class="body-views" aria-label="Keha">
         <figure>
           <div class="shot" data-view="eest">
             <img src="/eest.png?v=2" alt="Eest" />
@@ -173,12 +175,16 @@
           <button type="button" id="save-spots">Salvesta</button>
         </div>
       </div>
-      <section class="panel nutrition-panel">
+      </section>
+      <section class="panel nutrition-panel" data-section="nutrition" hidden>
         <h2 class="muscles-title">Toitumine</h2>
         <textarea id="nutrition" class="nutrition" rows="10"></textarea>
+      </section>
+      <section class="panel" data-section="goals" hidden>
+        <h2 class="muscles-title">Eesmärgid</h2>
         <label class="goal">
           Mida tahan saavutada ja mis ajaga
-          <textarea id="goal" class="nutrition goal-text" rows="4"></textarea>
+          <textarea id="goal" class="nutrition goal-text" rows="8"></textarea>
         </label>
       </section>
       <div id="muscle" class="modal" hidden>
@@ -250,12 +256,9 @@
           </div>
         </div>
       </section>
-      <section id="stats" class="modal" hidden>
-        <div class="modal-card stats-view">
-          <button type="button" class="back" id="stats-close">Sulge</button>
-          <h2>Statistika</h2>
-          <div id="stats-body"></div>
-        </div>
+      <section class="panel" data-section="records" hidden>
+        <h2 class="muscles-title">Rekordid</h2>
+        <div id="stats-body"></div>
       </section>
     </main>
     <script type="module" src="/src/main.js"></script>
