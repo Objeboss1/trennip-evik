@@ -478,7 +478,7 @@ const RECORDS_KEY = 'treeningpaevik-rekordid'
 const RECORD_KEYS = ['record1k', 'record5k', 'record10k', 'recordLong', 'recordTotal', 'recordRideLong', 'recordRideTotal']
 
 function defaultRecords() {
-  return { items: RECORD_KEYS.map((key) => ({ id: key, key, title: '', value: '' })) }
+  return { items: RECORD_KEYS.map((key) => ({ id: key, key, title: '', value: '', note: '' })) }
 }
 
 function emptyRecords() {
@@ -495,6 +495,7 @@ function loadRecordsFrom(saved) {
         key: typeof item.key === 'string' ? item.key.slice(0, 40) : '',
         title: String(item.title || '').slice(0, 60),
         value: String(item.value || '').slice(0, 40),
+        note: String(item.note || '').slice(0, 80),
       })),
   }
 }
@@ -511,11 +512,25 @@ function recordTitle(item) {
   return item.title
 }
 
+let recordsEditing = false
+
 function renderStats() {
   const section = document.createElement('section')
   section.className = 'record-head'
+  const top = document.createElement('div')
+  top.className = 'record-top'
   const heading = document.createElement('h3')
   heading.textContent = t('recordsAuto')
+  const edit = document.createElement('button')
+  edit.type = 'button'
+  edit.className = 'record-edit'
+  edit.setAttribute('aria-pressed', String(recordsEditing))
+  edit.textContent = recordsEditing ? t('done') : t('edit')
+  edit.addEventListener('click', () => {
+    recordsEditing = !recordsEditing
+    renderStats()
+  })
+  top.append(heading, edit)
   const hint = document.createElement('p')
   hint.textContent = t('recordsHint')
   const grid = document.createElement('div')
@@ -523,33 +538,59 @@ function renderStats() {
   for (const item of recordsState.items) {
     const card = document.createElement('article')
     card.className = 'record-card'
-    const title = document.createElement('input')
-    title.className = 'record-title'
-    title.value = recordTitle(item)
-    title.placeholder = t('recordTitle')
-    title.addEventListener('input', () => {
-      item.key = ''
-      item.title = title.value.slice(0, 60)
-      saveRecords()
-    })
-    const value = document.createElement('input')
-    value.className = 'record-value-input'
-    value.value = item.value
-    value.placeholder = t('recordValue')
-    value.addEventListener('input', () => {
-      item.value = value.value.slice(0, 40)
-      saveRecords()
-    })
     const remove = document.createElement('button')
     remove.type = 'button'
-    remove.className = 'record-remove'
-    remove.textContent = t('removeActivity')
+    remove.className = 'record-x'
+    remove.setAttribute('aria-label', t('removeActivity'))
+    remove.textContent = '×'
     remove.addEventListener('click', () => {
       recordsState.items = recordsState.items.filter((entry) => entry.id !== item.id)
       saveRecords()
       renderStats()
     })
-    card.append(title, value, remove)
+    card.append(remove)
+    if (recordsEditing) {
+      const title = document.createElement('input')
+      title.className = 'record-title'
+      title.value = recordTitle(item)
+      title.placeholder = t('recordTitle')
+      title.addEventListener('input', () => {
+        item.key = ''
+        item.title = title.value.slice(0, 60)
+        saveRecords()
+      })
+      const value = document.createElement('input')
+      value.className = 'record-value-input'
+      value.value = item.value
+      value.placeholder = t('recordValue')
+      value.addEventListener('input', () => {
+        item.value = value.value.slice(0, 40)
+        saveRecords()
+      })
+      const note = document.createElement('input')
+      note.className = 'record-note-input'
+      note.value = item.note
+      note.placeholder = t('recordNote')
+      note.addEventListener('input', () => {
+        item.note = note.value.slice(0, 80)
+        saveRecords()
+      })
+      card.append(title, value, note)
+    } else {
+      const title = document.createElement('h3')
+      title.textContent = recordTitle(item) || t('recordTitle')
+      const value = document.createElement('p')
+      value.className = 'record-value'
+      value.textContent = item.value || t('recordValue')
+      value.classList.toggle('is-empty', !item.value)
+      card.append(title, value)
+      if (item.note.trim()) {
+        const note = document.createElement('p')
+        note.className = 'record-note'
+        note.textContent = item.note
+        card.append(note)
+      }
+    }
     grid.append(card)
   }
   const add = document.createElement('button')
@@ -557,12 +598,13 @@ function renderStats() {
   add.className = 'records-add'
   add.textContent = t('recordsAdd')
   add.addEventListener('click', () => {
-    recordsState.items.push({ id: `custom-${Date.now()}`, key: '', title: '', value: '' })
+    recordsEditing = true
+    recordsState.items.push({ id: `custom-${Date.now()}`, key: '', title: '', value: '', note: '' })
     saveRecords()
     renderStats()
     document.querySelector('.record-grid .record-card:last-child .record-title')?.focus()
   })
-  section.append(heading, hint, grid, add)
+  section.append(top, hint, grid, add)
   statsBody.replaceChildren(section)
 }
 
@@ -1186,7 +1228,9 @@ function timesField(key) {
   return goalField(t('goalTimes'), input)
 }
 
-function goalCard(title, flag, fill, score) {
+const openGoalEdits = new Set()
+
+function goalCard(title, flag, { view, edit, score }) {
   const card = document.createElement('article')
   card.className = 'goal-card'
   const header = document.createElement('header')
@@ -1203,19 +1247,41 @@ function goalCard(title, flag, fill, score) {
     saveGoals()
     renderGoals()
   })
+  const tools = document.createElement('div')
+  tools.className = 'goal-tools'
+  if (edit) {
+    const change = document.createElement('button')
+    change.type = 'button'
+    change.className = 'goal-edit'
+    const open = openGoalEdits.has(flag)
+    change.setAttribute('aria-pressed', String(open))
+    change.textContent = t('edit')
+    change.addEventListener('click', () => {
+      if (openGoalEdits.has(flag)) openGoalEdits.delete(flag)
+      else {
+        openGoalEdits.add(flag)
+        goalsState[flag] = true
+        saveGoals()
+      }
+      renderGoals()
+    })
+    tools.append(change)
+  }
+  tools.append(button)
   if (score) {
     const titles = document.createElement('div')
     const line = document.createElement('p')
     line.className = 'goal-score'
     line.textContent = score
     titles.append(heading, line)
-    header.append(titles, button)
-  } else header.append(heading, button)
+    header.append(titles, tools)
+  } else header.append(heading, tools)
   card.append(header)
-  if (on) {
+  if (goalsState[flag]) {
     const body = document.createElement('div')
     body.className = 'goal-body'
-    fill(body)
+    if (edit && openGoalEdits.has(flag)) edit(body)
+    if (view) view(body)
     card.append(body)
   }
   return card
@@ -1224,116 +1290,142 @@ function goalCard(title, flag, fill, score) {
 function renderGoals() {
   const board = document.querySelector('#goal-board')
   board.replaceChildren()
+  const week = weekKeysFrom(weekStart(todayKey()))
   board.append(
-    goalCard(t('goalSleep'), 'sleepOn', (body) => {
-      const hours = document.createElement('input')
-      hours.type = 'number'
-      hours.min = '4'
-      hours.max = '12'
-      hours.step = '0.5'
-      hours.value = String(goalsState.sleepHours)
-      hours.addEventListener('change', () => {
-        goalsState.sleepHours = clampNumber(hours.value, 4, 12, goalsState.sleepHours)
-        saveGoals()
-        renderGoals()
-      })
-      const slept = document.createElement('input')
-      slept.type = 'number'
-      slept.min = '0'
-      slept.max = '16'
-      slept.step = '0.5'
-      slept.value = readGoalLog(todayKey()).sleep ?? ''
-      const mark = document.createElement('button')
-      mark.type = 'button'
-      mark.className = 'goal-mark'
-      mark.textContent = t('goalMark')
-      mark.addEventListener('click', () => {
-        if (slept.value === '') return
-        const key = todayKey()
-        goalsState.log[key] = { ...readGoalLog(key), sleep: clampNumber(slept.value, 0, 16, 0) }
-        saveGoals()
-        renderGoals()
-      })
-      const row = document.createElement('div')
-      row.className = 'goal-row'
-      row.append(goalField(t('goalSleepHours'), hours), goalField(t('goalSleepToday'), slept), mark)
-      const todaySleep = Number(readGoalLog(todayKey()).sleep)
-      const status = document.createElement('p')
-      status.className = 'goal-status'
-      status.textContent = Number.isFinite(todaySleep) && readGoalLog(todayKey()).sleep !== undefined
-        ? (todaySleep >= goalsState.sleepHours ? t('goalMet') : t('goalOpen'))
-        : t('goalOpen')
-      body.append(row, status, weekDots((key) => Number(readGoalLog(key).sleep) >= goalsState.sleepHours && readGoalLog(key).sleep !== undefined))
+    goalCard(t('goalSleep'), 'sleepOn', {
+      edit: (body) => {
+        const hours = document.createElement('input')
+        hours.type = 'number'
+        hours.min = '4'
+        hours.max = '12'
+        hours.step = '0.5'
+        hours.value = String(goalsState.sleepHours)
+        hours.addEventListener('change', () => {
+          goalsState.sleepHours = clampNumber(hours.value, 4, 12, goalsState.sleepHours)
+          saveGoals()
+          renderGoals()
+        })
+        body.append(goalField(t('goalSleepHours'), hours))
+      },
+      view: (body) => {
+        const slept = document.createElement('input')
+        slept.type = 'number'
+        slept.min = '0'
+        slept.max = '16'
+        slept.step = '0.5'
+        slept.value = readGoalLog(todayKey()).sleep ?? ''
+        const mark = document.createElement('button')
+        mark.type = 'button'
+        mark.className = 'goal-mark'
+        mark.textContent = t('goalMark')
+        mark.addEventListener('click', () => {
+          if (slept.value === '') return
+          const key = todayKey()
+          goalsState.log[key] = { ...readGoalLog(key), sleep: clampNumber(slept.value, 0, 16, 0) }
+          saveGoals()
+          renderGoals()
+        })
+        const row = document.createElement('div')
+        row.className = 'goal-row'
+        row.append(goalField(t('goalSleepToday'), slept), mark)
+        const todaySleep = Number(readGoalLog(todayKey()).sleep)
+        const status = document.createElement('p')
+        status.className = 'goal-status'
+        status.textContent = Number.isFinite(todaySleep) && readGoalLog(todayKey()).sleep !== undefined
+          ? (todaySleep >= goalsState.sleepHours ? t('goalMet') : t('goalOpen'))
+          : t('goalOpen')
+        body.append(row, status, weekDots((key) => Number(readGoalLog(key).sleep) >= goalsState.sleepHours && readGoalLog(key).sleep !== undefined))
+      },
     }),
-    goalCard(t('goalCalories'), 'caloriesOn', (body) => {
-      const target = Number(nutritionState.kcal) || 0
-      const eaten = eatenOn(todayKey())
-      const status = document.createElement('p')
-      status.className = 'goal-status'
-      if (!target) {
-        status.textContent = t('goalCaloriesNeed')
-        body.append(status)
-        return
-      }
-      status.textContent = `${eaten} / ${target} kcal. ${eaten >= target ? t('goalMet') : t('goalOpen')}`
-      const bar = document.createElement('div')
-      bar.className = 'goal-bar'
-      const fill = document.createElement('span')
-      fill.style.width = `${Math.min(100, Math.round((eaten / target) * 100))}%`
-      bar.append(fill)
-      body.append(status, bar)
+    goalCard(t('goalCalories'), 'caloriesOn', {
+      edit: (body) => {
+        const input = document.createElement('input')
+        input.type = 'number'
+        input.min = '800'
+        input.max = '6000'
+        input.step = '50'
+        input.value = nutritionState.kcal ? String(nutritionState.kcal) : ''
+        input.addEventListener('change', () => {
+          nutritionState.kcal = clampNumber(input.value, 800, 6000, nutritionState.kcal || 2000)
+          saveNutrition()
+          renderGoals()
+          if (!document.querySelector('#nutrition-board').hidden) renderNutrition()
+        })
+        body.append(goalField(t('nutritionKcal'), input))
+      },
+      view: (body) => {
+        const target = Number(nutritionState.kcal) || 0
+        const eaten = eatenOn(todayKey())
+        const status = document.createElement('p')
+        status.className = 'goal-status'
+        if (!target) {
+          status.textContent = t('goalCaloriesNeed')
+          body.append(status)
+          return
+        }
+        status.textContent = `${eaten} / ${target} kcal. ${eaten >= target ? t('goalMet') : t('goalOpen')}`
+        const bar = document.createElement('div')
+        bar.className = 'goal-bar'
+        const fill = document.createElement('span')
+        fill.style.width = `${Math.min(100, Math.round((eaten / target) * 100))}%`
+        bar.append(fill)
+        body.append(status, bar)
+      },
     }),
-    goalCard(
-      t('goalRun'),
-      'runOn',
-      (body) => body.append(timesField('runTimes'), weekMarkRow('run')),
-      goalsState.runOn ? `${markCount('run', weekKeysFrom(weekStart(todayKey())))}/${goalsState.runTimes} ${t('goalDone')}` : '',
-    ),
-    goalCard(
-      t('goalGym'),
-      'gymOn',
-      (body) => body.append(timesField('gymTimes'), weekMarkRow('gym')),
-      goalsState.gymOn ? `${markCount('gym', weekKeysFrom(weekStart(todayKey())))}/${goalsState.gymTimes} ${t('goalDone')}` : '',
-    ),
-    goalCard(t('goalWater'), 'waterOn', (body) => {
-      const glasses = document.createElement('input')
-      glasses.type = 'number'
-      glasses.min = '1'
-      glasses.max = '20'
-      glasses.step = '1'
-      glasses.value = String(goalsState.waterGlasses)
-      glasses.addEventListener('change', () => {
-        goalsState.waterGlasses = clampNumber(glasses.value, 1, 20, goalsState.waterGlasses)
-        saveGoals()
-        renderGoals()
-      })
-      const drunk = document.createElement('input')
-      drunk.type = 'number'
-      drunk.min = '0'
-      drunk.max = '30'
-      drunk.step = '1'
-      drunk.value = readGoalLog(todayKey()).water ?? ''
-      const mark = document.createElement('button')
-      mark.type = 'button'
-      mark.className = 'goal-mark'
-      mark.textContent = t('goalMark')
-      mark.addEventListener('click', () => {
-        if (drunk.value === '') return
-        const key = todayKey()
-        goalsState.log[key] = { ...readGoalLog(key), water: clampNumber(drunk.value, 0, 30, 0) }
-        saveGoals()
-        renderGoals()
-      })
-      const row = document.createElement('div')
-      row.className = 'goal-row'
-      row.append(goalField(t('goalGlasses'), glasses), goalField(t('goalTodayGlasses'), drunk), mark)
-      const todayWater = Number(readGoalLog(todayKey()).water)
-      const status = document.createElement('p')
-      status.className = 'goal-status'
-      status.textContent = readGoalLog(todayKey()).water !== undefined
-        ? (todayWater >= goalsState.waterGlasses ? t('goalMet') : t('goalOpen'))
-        : t('goalOpen')
-      body.append(row, status, weekDots((key) => Number(readGoalLog(key).water) >= goalsState.waterGlasses && readGoalLog(key).water !== undefined))
+    goalCard(t('goalRun'), 'runOn', {
+      score: goalsState.runOn ? `${markCount('run', week)}/${goalsState.runTimes} ${t('goalDone')}` : '',
+      edit: (body) => body.append(timesField('runTimes')),
+      view: (body) => body.append(weekMarkRow('run')),
+    }),
+    goalCard(t('goalGym'), 'gymOn', {
+      score: goalsState.gymOn ? `${markCount('gym', week)}/${goalsState.gymTimes} ${t('goalDone')}` : '',
+      edit: (body) => body.append(timesField('gymTimes')),
+      view: (body) => body.append(weekMarkRow('gym')),
+    }),
+    goalCard(t('goalWater'), 'waterOn', {
+      edit: (body) => {
+        const glasses = document.createElement('input')
+        glasses.type = 'number'
+        glasses.min = '1'
+        glasses.max = '20'
+        glasses.step = '1'
+        glasses.value = String(goalsState.waterGlasses)
+        glasses.addEventListener('change', () => {
+          goalsState.waterGlasses = clampNumber(glasses.value, 1, 20, goalsState.waterGlasses)
+          saveGoals()
+          renderGoals()
+        })
+        body.append(goalField(t('goalGlasses'), glasses))
+      },
+      view: (body) => {
+        const drunk = document.createElement('input')
+        drunk.type = 'number'
+        drunk.min = '0'
+        drunk.max = '30'
+        drunk.step = '1'
+        drunk.value = readGoalLog(todayKey()).water ?? ''
+        const mark = document.createElement('button')
+        mark.type = 'button'
+        mark.className = 'goal-mark'
+        mark.textContent = t('goalMark')
+        mark.addEventListener('click', () => {
+          if (drunk.value === '') return
+          const key = todayKey()
+          goalsState.log[key] = { ...readGoalLog(key), water: clampNumber(drunk.value, 0, 30, 0) }
+          saveGoals()
+          renderGoals()
+        })
+        const row = document.createElement('div')
+        row.className = 'goal-row'
+        row.append(goalField(t('goalTodayGlasses'), drunk), mark)
+        const todayWater = Number(readGoalLog(todayKey()).water)
+        const status = document.createElement('p')
+        status.className = 'goal-status'
+        status.textContent = readGoalLog(todayKey()).water !== undefined
+          ? (todayWater >= goalsState.waterGlasses ? t('goalMet') : t('goalOpen'))
+          : t('goalOpen')
+        body.append(row, status, weekDots((key) => Number(readGoalLog(key).water) >= goalsState.waterGlasses && readGoalLog(key).water !== undefined))
+      },
     }),
   )
 }
@@ -1439,9 +1531,12 @@ function renderWeek() {
   root.append(goalBlock)
 
   const recordBlock = weekBlock(t('weekRecords'))
-  const filled = recordsState.items.filter((item) => item.value.trim())
+  const filled = recordsState.items.filter((item) => item.value.trim() || item.note.trim())
   if (!filled.length) recordBlock.append(weekLine(t('recordEmpty')))
-  for (const item of filled) recordBlock.append(weekLine(`${recordTitle(item) || t('recordTitle')}: ${item.value}`))
+  for (const item of filled) {
+    const text = item.value.trim() ? `${recordTitle(item) || t('recordTitle')}: ${item.value}` : (recordTitle(item) || t('recordTitle'))
+    recordBlock.append(weekLine(item.note.trim() ? `${text} · ${item.note.trim()}` : text))
+  }
   root.append(recordBlock)
 }
 
@@ -1835,29 +1930,12 @@ function renderBody() {
   const body = nutritionState.body
   document.querySelector('#body-aim-label').textContent = t(body.aim === 'gain' ? 'bodyGain' : body.aim === 'keep' ? 'bodyKeep' : 'bodyLose')
   const current = latestPoint(body.weights)
-  const fat = latestPoint(body.fat)
   document.querySelector('#body-current').textContent = current ? `${formatBody(current.kg)} kg` : '—'
   document.querySelector('#body-goal').textContent = body.goalKg ? `${formatBody(body.goalKg)} kg` : '—'
-  const fatLine = document.querySelector('#body-fat')
-  fatLine.hidden = !fat
-  fatLine.textContent = fat ? `${t('bodyFat')} ${formatBody(fat.pct)}%` : ''
   const empty = document.querySelector('#body-empty')
   empty.hidden = body.weights.length >= 2
   empty.textContent = body.weights.length ? t('bodyNeedMore') : t('bodyEmpty')
   renderWeightChart(body.weights, Number(body.goalKg) || 0)
-  const measure = latestPoint(body.measures)
-  const bits = []
-  if (measure) {
-    for (const [key, label] of [['waist', 'bodyWaist'], ['chest', 'bodyChest'], ['hips', 'bodyHips'], ['arm', 'bodyArm'], ['thigh', 'bodyThigh']]) {
-      if (measure[key]) bits.push(`${t(label).replace(/\s*\(.*\)$/, '')} ${formatBody(measure[key])} cm`)
-    }
-  }
-  document.querySelector('#body-measures').textContent = bits.length ? `${bits.join(' · ')} · ${shortStamp(measure.date)}` : t('bodyMeasuresEmpty')
-  for (const side of ['before', 'after']) {
-    const image = document.querySelector(`#body-${side}-photo`)
-    image.hidden = !body.photos[side]
-    if (body.photos[side]) image.src = body.photos[side]
-  }
 }
 
 function upsertPoint(list, date, patch) {
@@ -1977,73 +2055,29 @@ document.querySelector('#body-update').addEventListener('click', () => {
   const form = document.querySelector('#body-form')
   form.hidden = !form.hidden
   if (form.hidden) return
-  const body = nutritionState.body
-  const current = latestPoint(body.weights)
-  const fat = latestPoint(body.fat)
-  const measure = latestPoint(body.measures) || {}
+  const current = latestPoint(nutritionState.body.weights)
   document.querySelector('#body-weight-input').value = current ? String(current.kg) : ''
-  document.querySelector('#body-goal-input').value = body.goalKg ? String(body.goalKg) : ''
-  document.querySelector('#body-fat-input').value = fat ? String(fat.pct) : ''
-  document.querySelector('#body-waist').value = measure.waist || ''
-  document.querySelector('#body-chest').value = measure.chest || ''
-  document.querySelector('#body-hips').value = measure.hips || ''
-  document.querySelector('#body-arm').value = measure.arm || ''
-  document.querySelector('#body-thigh').value = measure.thigh || ''
+  document.querySelector('#body-goal-input').value = nutritionState.body.goalKg ? String(nutritionState.body.goalKg) : ''
 })
 
 document.querySelector('#body-form').addEventListener('submit', (event) => {
   event.preventDefault()
   const weight = finiteIn(document.querySelector('#body-weight-input').value, 30, 250)
   const goal = finiteIn(document.querySelector('#body-goal-input').value, 30, 250)
-  const fat = finiteIn(document.querySelector('#body-fat-input').value, 2, 70)
-  const waist = finiteIn(document.querySelector('#body-waist').value, 40, 200)
-  const chest = finiteIn(document.querySelector('#body-chest').value, 40, 200)
-  const hips = finiteIn(document.querySelector('#body-hips').value, 40, 200)
-  const arm = finiteIn(document.querySelector('#body-arm').value, 15, 80)
-  const thigh = finiteIn(document.querySelector('#body-thigh').value, 20, 120)
   const fields = [
     document.querySelector('#body-weight-input'),
     document.querySelector('#body-goal-input'),
-    document.querySelector('#body-fat-input'),
-    document.querySelector('#body-waist'),
-    document.querySelector('#body-chest'),
-    document.querySelector('#body-hips'),
-    document.querySelector('#body-arm'),
-    document.querySelector('#body-thigh'),
   ]
-  const parsed = [weight, goal, fat, waist, chest, hips, arm, thigh]
+  const parsed = [weight, goal]
   const invalid = parsed.some((value, index) => value === null && fields[index].value.trim())
   if (invalid || parsed.every((value) => value === null)) return
-  const date = stampFromDate(new Date())
   const body = nutritionState.body
   if (goal !== null) body.goalKg = goal
-  if (weight !== null) upsertPoint(body.weights, date, { kg: weight })
-  if (fat !== null) upsertPoint(body.fat, date, { pct: fat })
-  const measures = { waist, chest, hips, arm, thigh }
-  if (Object.values(measures).some((value) => value !== null)) {
-    const next = {}
-    for (const [key, value] of Object.entries(measures)) if (value !== null) next[key] = value
-    upsertPoint(body.measures, date, next)
-  }
+  if (weight !== null) upsertPoint(body.weights, stampFromDate(new Date()), { kg: weight })
   saveNutrition()
   document.querySelector('#body-form').hidden = true
   renderBody()
 })
-
-for (const side of ['before', 'after']) {
-  document.querySelector(`#body-${side}`).addEventListener('change', async (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    try {
-      nutritionState.body.photos[side] = await readPhoto(file)
-      saveNutrition()
-      renderBody()
-    } catch {
-      nutritionState.body.photos[side] = nutritionState.body.photos[side]
-    }
-  })
-}
 
 function collectDiary() {
   return {

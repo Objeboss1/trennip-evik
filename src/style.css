@@ -1575,13 +1575,11 @@ body.moving-spots .spot {
 }
 
 .nutrition-result small,
-.nutrition-preview,
-.body-fat {
+.nutrition-preview {
   color: var(--accent);
 }
 
 .nutrition-amount p,
-.body-fat,
 #body-empty {
   margin: 0;
 }
@@ -1650,8 +1648,7 @@ body.moving-spots .spot {
   margin: 0.75rem 0 0.2rem;
 }
 
-.body-numbers span,
-.body-photos span {
+.body-numbers span {
   display: block;
   color: var(--muted);
   font-size: 0.78rem;
@@ -1662,8 +1659,7 @@ body.moving-spots .spot {
   font-size: 1.45rem;
 }
 
-.body-numbers .is-goal,
-.body-fat {
+.body-numbers .is-goal {
   color: var(--accent);
 }
 
@@ -1699,45 +1695,6 @@ body.moving-spots .spot {
 
 .body-form button {
   grid-column: 1 / -1;
-}
-
-.body-photos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  margin-top: 0.6rem;
-}
-
-.body-photos img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 0.8rem;
-  margin: 0.35rem 0;
-}
-
-.body-photos label {
-  position: relative;
-  cursor: pointer;
-}
-
-.body-photos input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.body-photo-add {
-  display: inline-block;
-  margin-top: 0.35rem;
-  color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 750;
-}
-
-.body-block h3 {
-  margin-bottom: 0.35rem;
 }
 
 .nutrition-pick {
@@ -2091,6 +2048,38 @@ body.moving-spots .spot {
   gap: 1rem;
 }
 
+.record-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.record-edit,
+.goal-edit {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.32rem 0.7rem;
+  color: var(--accent);
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.goal-edit {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.record-edit[aria-pressed='true'],
+.goal-edit[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 .record-head h3,
 .goal-card h3,
 .record-card h3,
@@ -2137,6 +2126,13 @@ body.moving-spots .spot {
   background: var(--card);
 }
 
+.record-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  padding-right: 2.3rem;
+}
+
 .record-card input {
   width: 100%;
   border: 0;
@@ -2163,17 +2159,37 @@ body.moving-spots .spot {
   font-weight: 650;
 }
 
-.record-remove {
-  justify-self: start;
-  margin-top: 0.55rem;
+.record-x {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
   border: 0;
-  padding: 0;
+  border-radius: 999px;
   color: var(--muted);
   background: transparent;
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1;
   cursor: pointer;
+}
+
+.record-note,
+.record-card .record-note-input {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.record-card .record-note-input {
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 0.4rem 0 0;
+  font-weight: 650;
 }
 
 .records-add {
@@ -2227,6 +2243,13 @@ body.moving-spots .spot {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
+}
+
+.goal-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
 }
 
 .goal-switch,
