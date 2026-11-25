@@ -122,18 +122,22 @@
       </div>
     </section>
     <main>
-      <header class="hero">
-        <h1 data-i18n="title">Trennipäevik</h1>
-        <p id="now" class="now"></p>
+      <header class="hello">
+        <div class="hello-copy">
+          <h1 id="hello-title">Tere hommikust</h1>
+          <p id="hello-sub" class="hello-sub" data-i18n="helloSub">Teeme tänased eesmärgid ära.</p>
+          <p class="streak" id="streak">
+            <svg class="flame" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M12.2 2.2c.4 2.4-.5 4-1.6 5.3-.8.9-1.2 1.7-1.2 2.7 0 .5.1.9.3 1.3-1.3-.7-2.4-2-2.4-3.6 0 0-3.3 2.6-3.3 6.8A8.1 8.1 0 0 0 12 23a8.1 8.1 0 0 0 8-8.3c0-4.6-3.5-6.8-4.6-7.7.3 1.4-.2 2.6-1 3.5-.4-2.5-1.8-4.9-2.2-8.3z" />
+            </svg>
+            <span id="streak-count">0</span>
+          </p>
+        </div>
+        <button type="button" id="hello-avatar" class="hello-avatar">
+          <span id="hello-initial">?</span>
+          <img id="hello-photo" alt="" hidden />
+        </button>
       </header>
-      <nav class="section-nav" aria-label="Lehe osad">
-        <button type="button" data-view="calendar" data-i18n="calendar" aria-pressed="true">Kalender</button>
-        <button type="button" data-view="plan" data-i18n="plan">Treeningkava</button>
-        <button type="button" data-view="muscles" data-i18n="muscles">Lihased</button>
-        <button type="button" data-view="nutrition" data-i18n="nutrition">Toitumine</button>
-        <button type="button" data-view="goals" data-i18n="goals">Eesmärgid</button>
-        <button type="button" data-view="records" data-i18n="records">Rekordid</button>
-      </nav>
       <section id="calendar" class="calendar panel" data-section="calendar" aria-labelledby="month-label">
         <div class="calendar-nav">
           <button type="button" class="month-arrow" data-nav="prev" data-i18n-aria="prevMonth" aria-label="Eelmine kuu">‹</button>
@@ -312,6 +316,32 @@
         <div id="stats-body"></div>
       </section>
     </main>
+    <nav class="tab-bar" aria-label="Lehe osad" data-i18n-aria="sections">
+      <button type="button" data-view="calendar" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2.5a1 1 0 0 1 1 1V5h8V3.5a1 1 0 1 1 2 0V5h1.2A2.8 2.8 0 0 1 22 7.8V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7.8A2.8 2.8 0 0 1 4.8 5H6V3.5a1 1 0 0 1 1-1zM4 10v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9H4z"/></svg>
+        <span data-i18n="calendar">Kalender</span>
+      </button>
+        <button type="button" data-view="plan" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 8.2A2.2 2.2 0 0 1 4.7 6h1.1a2.2 2.2 0 0 1 2.2 2.2v7.6A2.2 2.2 0 0 1 5.8 18H4.7a2.2 2.2 0 0 1-2.2-2.2V8.2zm13.5 0A2.2 2.2 0 0 1 18.2 6h1.1a2.2 2.2 0 0 1 2.2 2.2v7.6a2.2 2.2 0 0 1-2.2 2.2h-1.1a2.2 2.2 0 0 1-2.2-2.2V8.2zM8 10.2h8v3.6H8v-3.6z"/></svg>
+        <span data-i18n="plan">Treeningkava</span>
+      </button>
+        <button type="button" data-view="muscles" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8zM8.2 9.2c.8-1 2.2-1.6 3.8-1.6s3 .6 3.8 1.6l2.4 3.2a1.2 1.2 0 0 1-1.9 1.5l-1.1-1.2v8.1a1.2 1.2 0 1 1-2.4 0v-4.2h-1.6v4.2a1.2 1.2 0 1 1-2.4 0v-8.1l-1.1 1.2a1.2 1.2 0 1 1-1.9-1.5l2.4-3.2z"/></svg>
+        <span data-i18n="muscles">Lihased</span>
+      </button>
+        <button type="button" data-view="nutrition" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.2 4.6c.4-1.5 1.7-2.6 3.2-2.8-.3 1.6-1.5 2.8-3.2 2.8zM8.4 8.2c1.6-1.1 3.6-1.2 5.2-.2 1.7 1 2.6 2.6 2.4 4.4-.2 2.4-1.2 4.4-2.2 5.8-.6.8-1.1 1.3-1.6 1.3-.6 0-1-.6-1.8-.6s-1.2.6-1.8.6c-.5 0-1.1-.6-1.7-1.5-1.2-1.6-2.3-3.8-2.3-6.2 0-1.5.6-2.8 1.8-3.6z"/></svg>
+        <span data-i18n="nutrition">Toitumine</span>
+      </button>
+        <button type="button" data-view="goals" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6a9.4 9.4 0 1 1 0 18.8 9.4 9.4 0 0 1 0-18.8zm0 3.2a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zm0 3.1a3.1 3.1 0 1 1 0 6.2 3.1 3.1 0 0 1 0-6.2z"/></svg>
+        <span data-i18n="goals">Eesmärgid</span>
+      </button>
+        <button type="button" data-view="records" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 19.5A1.5 1.5 0 0 1 3.5 18V11A1.5 1.5 0 0 1 5 9.5h2A1.5 1.5 0 0 1 8.5 11v7A1.5 1.5 0 0 1 7 19.5H5zm6 0A1.5 1.5 0 0 1 9.5 18V6A1.5 1.5 0 0 1 11 4.5h2A1.5 1.5 0 0 1 14.5 6v12a1.5 1.5 0 0 1-1.5 1.5h-2zm6 0a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 17 11.5h2a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-2z"/></svg>
+        <span data-i18n="records">Rekordid</span>
+      </button>
+    </nav>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
