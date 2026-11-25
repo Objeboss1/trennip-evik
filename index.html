@@ -217,14 +217,11 @@
       </section>
       <section class="panel" data-section="plan" hidden>
       <div id="plan-panel" class="plan-panel">
-        <div class="plan-tools">
-          <button type="button" id="plan-edit" data-i18n="edit">Muuda</button>
-          <button type="button" id="plan-add-column" data-i18n="addColumn" hidden>Lisa veerg</button>
-        </div>
-        <div id="plan-scroll" class="plan-scroll">
-          <div id="plan-cells" class="plan-cells"></div>
-        </div>
-        <input id="plan-range" class="plan-range" type="range" min="0" max="0" value="0" hidden aria-label="Keri treeningkava" />
+        <h2 class="muscles-title" data-i18n="strengthTitle">Jõutrenn</h2>
+        <div id="plan-days" class="plan-days"></div>
+        <div id="plan-list" class="plan-list"></div>
+        <button type="button" id="plan-add" class="plan-add-main" data-i18n="addExercise">Lisa harjutus</button>
+        <p class="plan-credit">Photos: <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noreferrer">free-exercise-db</a> (Unlicense), based on <a href="https://github.com/wrkout/exercises.json" target="_blank" rel="noreferrer">wrkout/exercises.json</a>.</p>
       </div>
       </section>
       <section class="panel" data-section="muscles" hidden>
@@ -322,6 +319,35 @@
           <textarea id="goal" class="nutrition goal-text" rows="8"></textarea>
         </label>
       </section>
+      <div id="plan-picker" class="modal" hidden>
+        <div class="modal-card plan-picker-card">
+          <button type="button" id="plan-picker-close" class="back" data-i18n="close">Sulge</button>
+          <div id="plan-detail" hidden>
+            <img id="plan-detail-photo" alt="" />
+            <h3 id="plan-detail-title"></h3>
+            <p id="plan-detail-names"></p>
+            <p id="plan-detail-muscle"></p>
+            <p id="plan-detail-info"></p>
+            <div class="plan-counts">
+              <label>
+                <span data-i18n="sets">Seeriad</span>
+                <input id="plan-detail-sets" inputmode="numeric" />
+              </label>
+              <label>
+                <span data-i18n="planReps">Kordused</span>
+                <input id="plan-detail-reps" inputmode="numeric" />
+              </label>
+            </div>
+            <button type="button" id="plan-detail-add" data-i18n="addToDay">Lisa sellesse päeva</button>
+            <button type="button" id="plan-detail-back" class="back" data-i18n="back">Tagasi</button>
+          </div>
+          <div id="plan-browser">
+            <input id="plan-search" type="search" data-i18n-placeholder="planSearch" placeholder="Otsi harjutust" />
+            <div id="plan-groups" class="plan-groups"></div>
+            <div id="plan-grid" class="plan-grid"></div>
+          </div>
+        </div>
+      </div>
       <div id="muscle" class="modal" hidden>
         <div class="modal-card muscle-view">
           <button type="button" class="back" id="muscle-back" data-i18n="close">Sulge</button>

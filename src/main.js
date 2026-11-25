@@ -1,6 +1,7 @@
 import './style.css'
 import sharedDiary from './shared-diary.json'
 import { applyLanguage, getLang, months, setLang, t, weekdays } from './i18n.js'
+import { EXERCISES, EXERCISE_GROUPS, exerciseById, findExercise } from './exercises.js'
 
 const CHOICE_KEYS = {
   Jooksmine: 'run',
@@ -708,186 +709,300 @@ muscleReps.addEventListener('input', saveOpenMuscle)
 
 const PLAN_KEY = 'treeningpaevik-kava'
 const planPanel = document.querySelector('#plan-panel')
-const planScroll = document.querySelector('#plan-scroll')
-const planRange = document.querySelector('#plan-range')
-const planCells = document.querySelector('#plan-cells')
-const planEdit = document.querySelector('#plan-edit')
-const planAddColumn = document.querySelector('#plan-add-column')
-
-const PLAN_ROWS = 10
-let planEditing = false
-let planDrag = null
-
-planScroll.addEventListener('pointerdown', (event) => {
-  if (!planScroll.classList.contains('plan-wide')) return
-  if (event.target.closest('input, button, textarea, select, label')) return
-  planDrag = { x: event.clientX, left: planScroll.scrollLeft, pointer: event.pointerId }
-  planScroll.setPointerCapture(event.pointerId)
-  planScroll.classList.add('is-dragging')
-})
-
-planScroll.addEventListener('pointermove', (event) => {
-  if (!planDrag || planDrag.pointer !== event.pointerId) return
-  planScroll.scrollLeft = planDrag.left - (event.clientX - planDrag.x)
-})
-
-function endPlanDrag(event) {
-  if (!planDrag || (event && planDrag.pointer !== event.pointerId)) return
-  planDrag = null
-  planScroll.classList.remove('is-dragging')
+const planDays = document.querySelector('#plan-days')
+const planList = document.querySelector('#plan-list')
+const planAdd = document.querySelector('#plan-add')
+const planPicker = document.querySelector('#plan-picker')
+const planBrowser = document.querySelector('#plan-browser')
+const planDetail = document.querySelector('#plan-detail')
+const planSearch = document.querySelector('#plan-search')
+const planGroups = document.querySelector('#plan-groups')
+const planGrid = document.querySelector('#plan-grid')
+const PLAN_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const PLAN_SHORT = {
+  et: { mon: 'E', tue: 'T', wed: 'K', thu: 'N', fri: 'R', sat: 'L', sun: 'P' },
+  en: { mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S', sun: 'S' },
+  ru: { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' },
 }
 
-planScroll.addEventListener('pointerup', endPlanDrag)
-planScroll.addEventListener('pointercancel', endPlanDrag)
-
-function updatePlanRange() {
-  const extra = planScroll.scrollWidth - planScroll.clientWidth
-  planRange.hidden = extra < 2
-  planRange.max = String(Math.max(extra, 0))
-  planRange.value = String(planScroll.scrollLeft)
+function todayPlanDay() {
+  return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()]
 }
 
-planScroll.addEventListener('scroll', updatePlanRange)
-planRange.addEventListener('input', () => {
-  planScroll.scrollLeft = Number(planRange.value)
-})
-window.addEventListener('resize', updatePlanRange)
+let selectedDay = todayPlanDay()
+let pickerGroup = ''
+let detailExercise = null
+let detailInfoOnly = false
 
-function emptyPlanColumn(rowCount = PLAN_ROWS) {
-  return {
-    title: '',
-    rows: Array.from({ length: rowCount }, () => ({ text: '', reps: '' })),
-  }
+function emptyPlan() {
+  return { v: 2, days: Object.fromEntries(PLAN_DAYS.map((day) => [day, []])) }
 }
 
-function normalizeColumn(column) {
-  const source = Array.isArray(column) ? column : column?.rows
-  const title = Array.isArray(column) ? '' : column?.title || ''
-  const rows = Array.isArray(source)
-    ? source.map((row) => ({ text: row?.text || '', reps: row?.reps || '' }))
-    : [{ text: '', reps: '' }]
-  return { title, rows }
+function planItemFromRow(row) {
+  const name = String(row?.text || row?.name || '').trim()
+  const reps = String(row?.reps || '')
+  const sets = String(row?.sets || '')
+  if (!name) return null
+  const match = findExercise(name)
+  if (match) return { id: match.id, sets, reps }
+  return { name, sets, reps }
 }
 
-function loadPlanCells() {
+function migrateColumns(columns) {
+  const plan = emptyPlan()
+  columns.forEach((column, index) => {
+    const day = PLAN_DAYS[Math.min(index, PLAN_DAYS.length - 1)]
+    const rows = Array.isArray(column) ? column : column?.rows || []
+    for (const row of rows) {
+      const item = planItemFromRow(row)
+      if (item) plan.days[day].push(item)
+    }
+  })
+  return plan
+}
+
+function loadPlan() {
   const saved = loadJson(PLAN_KEY)
-  if (!Array.isArray(saved)) {
-    return [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()]
+  if (Array.isArray(saved)) return migrateColumns(saved)
+  const plan = emptyPlan()
+  if (!saved || typeof saved !== 'object' || !saved.days) return plan
+  for (const day of PLAN_DAYS) {
+    const rows = Array.isArray(saved.days[day]) ? saved.days[day] : []
+    plan.days[day] = rows.map((row) => {
+      if (row?.id && exerciseById(row.id)) return { id: row.id, sets: String(row.sets || ''), reps: String(row.reps || '') }
+      return planItemFromRow(row)
+    }).filter(Boolean)
   }
-  return saved.map(normalizeColumn)
+  return plan
 }
 
-let planCellsData = loadPlanCells()
+let planCellsData = loadPlan()
 
 function savePlan() {
   localStorage.setItem(PLAN_KEY, JSON.stringify(planCellsData))
   pushDiary()
 }
 
+function exerciseLabel(value) {
+  if (!value) return ''
+  return value[getLang()] || value.et || ''
+}
+
+function countField(label, value, onInput) {
+  const wrap = document.createElement('label')
+  const span = document.createElement('span')
+  span.textContent = label
+  const input = document.createElement('input')
+  input.inputMode = 'numeric'
+  input.value = value
+  input.addEventListener('input', () => onInput(input.value))
+  wrap.append(span, input)
+  return wrap
+}
+
 function renderPlan() {
-  planCells.replaceChildren()
-  planCells.style.setProperty('--plan-columns', String(Math.max(planCellsData.length, 1)))
-  planScroll.classList.toggle('plan-wide', planCellsData.length > 3)
-  planCellsData.forEach((column, columnIndex) => {
-    const box = document.createElement('div')
-    box.className = 'plan-box'
-    const head = document.createElement('div')
-    head.className = 'plan-head'
-    const title = document.createElement('input')
-    title.type = 'text'
-    title.className = 'plan-title'
-    title.value = column.title
-    title.readOnly = !planEditing
-    title.setAttribute('aria-label', 'Pealkiri')
-    title.addEventListener('input', () => {
-      planCellsData[columnIndex].title = title.value
+  const today = todayPlanDay()
+  const shorts = PLAN_SHORT[getLang()] || PLAN_SHORT.et
+  planDays.replaceChildren()
+  for (const day of PLAN_DAYS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'plan-day'
+    if (day === today) button.classList.add('is-today')
+    button.setAttribute('aria-pressed', String(day === selectedDay))
+    const full = document.createElement('span')
+    full.className = 'plan-day-name'
+    full.textContent = t(day)
+    const short = document.createElement('span')
+    short.className = 'plan-day-short'
+    short.textContent = shorts[day]
+    button.append(full, short)
+    button.addEventListener('click', () => {
+      selectedDay = day
+      renderPlan()
+    })
+    planDays.append(button)
+  }
+
+  planList.replaceChildren()
+  const items = planCellsData.days[selectedDay] || []
+  if (!items.length) {
+    const empty = document.createElement('p')
+    empty.className = 'plan-empty'
+    empty.textContent = t('planEmpty')
+    planList.append(empty)
+  }
+  items.forEach((item, index) => {
+    const exercise = item.id ? exerciseById(item.id) : null
+    const card = document.createElement('article')
+    card.className = 'plan-card'
+    const photo = document.createElement('button')
+    photo.type = 'button'
+    photo.className = 'plan-photo'
+    if (exercise) {
+      const img = document.createElement('img')
+      img.src = `/exercises/${exercise.id}.jpg`
+      img.alt = exerciseLabel(exercise)
+      photo.append(img)
+      photo.addEventListener('click', () => openDetail(exercise, true))
+    } else {
+      photo.textContent = (item.name || '?').slice(0, 1).toUpperCase()
+      photo.disabled = true
+    }
+    const body = document.createElement('div')
+    body.className = 'plan-card-body'
+    const title = document.createElement('h3')
+    title.textContent = exercise ? exerciseLabel(exercise) : item.name
+    const muscle = document.createElement('p')
+    muscle.textContent = exercise ? exerciseLabel(exercise.muscle) : ''
+    const counts = document.createElement('div')
+    counts.className = 'plan-counts'
+    counts.append(
+      countField(t('sets'), item.sets, (value) => {
+        planCellsData.days[selectedDay][index].sets = value
+        savePlan()
+      }),
+      countField(t('planReps'), item.reps, (value) => {
+        planCellsData.days[selectedDay][index].reps = value
+        savePlan()
+      }),
+    )
+    body.append(title, muscle, counts)
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'plan-remove'
+    remove.textContent = '×'
+    remove.setAttribute('aria-label', t('planRemove'))
+    remove.addEventListener('click', () => {
+      planCellsData.days[selectedDay].splice(index, 1)
       savePlan()
+      renderPlan()
     })
-    head.append(title)
-    if (planEditing && planCellsData.length > 1) {
-      const removeColumn = document.createElement('button')
-      removeColumn.type = 'button'
-      removeColumn.className = 'plan-remove'
-      removeColumn.textContent = t('removeColumn')
-      removeColumn.addEventListener('click', () => {
-        planCellsData.splice(columnIndex, 1)
-        savePlan()
-        renderPlan()
-      })
-      head.append(removeColumn)
-    }
-    box.append(head)
-    column.rows.forEach((row, rowIndex) => {
-      const line = document.createElement('div')
-      line.className = 'plan-row'
-      const text = document.createElement('input')
-      text.type = 'text'
-      text.value = row.text
-      text.readOnly = !planEditing
-      text.setAttribute('aria-label', 'Harjutus')
-      const reps = document.createElement('input')
-      reps.type = 'text'
-      reps.className = 'plan-reps'
-      reps.value = row.reps
-      reps.readOnly = !planEditing
-      reps.setAttribute('aria-label', 'Korduste arv')
-      text.addEventListener('input', () => {
-        planCellsData[columnIndex].rows[rowIndex].text = text.value
-        savePlan()
-      })
-      reps.addEventListener('input', () => {
-        planCellsData[columnIndex].rows[rowIndex].reps = reps.value
-        savePlan()
-      })
-      line.append(text, reps)
-      if (planEditing) {
-        const removeRow = document.createElement('button')
-        removeRow.type = 'button'
-        removeRow.className = 'plan-remove plan-remove-row'
-        removeRow.textContent = '×'
-        removeRow.setAttribute('aria-label', 'Eemalda rida')
-        removeRow.addEventListener('click', () => {
-          planCellsData[columnIndex].rows.splice(rowIndex, 1)
-          savePlan()
-          renderPlan()
-        })
-        line.append(removeRow)
-      }
-      box.append(line)
-    })
-    if (planEditing) {
-      const addRow = document.createElement('button')
-      addRow.type = 'button'
-      addRow.className = 'plan-add'
-      addRow.textContent = t('addRow')
-      addRow.addEventListener('click', () => {
-        planCellsData[columnIndex].rows.push({ text: '', reps: '' })
-        savePlan()
-        renderPlan()
-      })
-      box.append(addRow)
-    }
-    planCells.append(box)
+    card.append(photo, body, remove)
+    planList.append(card)
   })
-  updatePlanRange()
+  if (!planPicker.hidden && planDetail.hidden) renderPicker()
+  if (!planDetail.hidden && detailExercise) fillDetail(false)
 }
 
-function setPlanEditing(editing) {
-  planEditing = editing
-  planEdit.textContent = editing ? t('done') : t('edit')
-  planEdit.setAttribute('aria-pressed', String(editing))
-  planAddColumn.hidden = !editing
-  if (!planPanel.hidden) renderPlan()
+function openPicker() {
+  pickerGroup = ''
+  detailExercise = null
+  planSearch.value = ''
+  planDetail.hidden = true
+  planBrowser.hidden = false
+  planPicker.hidden = false
+  renderPicker()
+  planSearch.focus()
 }
 
-planEdit.addEventListener('click', () => {
-  setPlanEditing(!planEditing)
+function closePicker() {
+  planPicker.hidden = true
+  detailExercise = null
+}
+
+function renderPicker() {
+  planGroups.replaceChildren()
+  const all = document.createElement('button')
+  all.type = 'button'
+  all.textContent = getLang() === 'ru' ? 'Все' : getLang() === 'en' ? 'All' : 'Kõik'
+  all.setAttribute('aria-pressed', String(!pickerGroup))
+  all.addEventListener('click', () => {
+    pickerGroup = ''
+    renderPicker()
+  })
+  planGroups.append(all)
+  for (const group of EXERCISE_GROUPS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = exerciseLabel(group)
+    button.setAttribute('aria-pressed', String(pickerGroup === group.id))
+    button.addEventListener('click', () => {
+      pickerGroup = group.id
+      renderPicker()
+    })
+    planGroups.append(button)
+  }
+  const query = planSearch.value.trim().toLowerCase()
+  planGrid.replaceChildren()
+  for (const exercise of EXERCISES) {
+    if (pickerGroup && exercise.group !== pickerGroup) continue
+    const blob = `${exercise.et} ${exercise.en} ${exercise.ru} ${exercise.muscle.et} ${exercise.muscle.en} ${exercise.muscle.ru}`.toLowerCase()
+    if (query && !blob.includes(query)) continue
+    const tile = document.createElement('button')
+    tile.type = 'button'
+    tile.className = 'plan-tile'
+    const img = document.createElement('img')
+    img.src = `/exercises/${exercise.id}.jpg`
+    img.alt = ''
+    img.loading = 'lazy'
+    const name = document.createElement('span')
+    name.textContent = exerciseLabel(exercise)
+    tile.append(img, name)
+    tile.addEventListener('click', () => openDetail(exercise, false))
+    planGrid.append(tile)
+  }
+}
+
+function fillDetail(resetCounts) {
+  const exercise = detailExercise
+  if (!exercise) return
+  const photo = document.querySelector('#plan-detail-photo')
+  photo.src = `/exercises/${exercise.id}.jpg`
+  photo.alt = exerciseLabel(exercise)
+  document.querySelector('#plan-detail-title').textContent = exerciseLabel(exercise)
+  document.querySelector('#plan-detail-names').textContent = `${exercise.et} · ${exercise.en}`
+  document.querySelector('#plan-detail-muscle').textContent = exerciseLabel(exercise.muscle)
+  document.querySelector('#plan-detail-info').textContent = exerciseLabel(exercise.info)
+  document.querySelector('#plan-detail .plan-counts').hidden = detailInfoOnly
+  document.querySelector('#plan-detail-add').hidden = detailInfoOnly
+  if (resetCounts && !detailInfoOnly) {
+    document.querySelector('#plan-detail-sets').value = '3'
+    document.querySelector('#plan-detail-reps').value = '10'
+  }
+}
+
+function openDetail(exercise, infoOnly) {
+  if (!exercise) return
+  detailExercise = exercise
+  detailInfoOnly = infoOnly
+  planBrowser.hidden = true
+  planDetail.hidden = false
+  planPicker.hidden = false
+  fillDetail(true)
+  if (!infoOnly) document.querySelector('#plan-detail-sets').focus()
+}
+
+planAdd.addEventListener('click', openPicker)
+document.querySelector('#plan-picker-close').addEventListener('click', closePicker)
+planPicker.addEventListener('click', (event) => {
+  if (event.target === planPicker) closePicker()
 })
-
-planAddColumn.addEventListener('click', () => {
-  planCellsData.push(emptyPlanColumn(1))
+document.querySelector('#plan-detail-back').addEventListener('click', () => {
+  if (detailInfoOnly) {
+    closePicker()
+    return
+  }
+  planDetail.hidden = true
+  planBrowser.hidden = false
+  detailExercise = null
+})
+planSearch.addEventListener('input', renderPicker)
+document.querySelector('#plan-detail-add').addEventListener('click', () => {
+  if (!detailExercise) return
+  planCellsData.days[selectedDay].push({
+    id: detailExercise.id,
+    sets: document.querySelector('#plan-detail-sets').value.trim(),
+    reps: document.querySelector('#plan-detail-reps').value.trim(),
+  })
   savePlan()
+  closePicker()
   renderPlan()
+  const cards = planList.querySelectorAll('.plan-card')
+  cards[cards.length - 1]?.scrollIntoView({ block: 'nearest' })
+})
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !planPicker.hidden) closePicker()
 })
 
 let muscle3d = null
@@ -916,33 +1031,20 @@ document.querySelector('.muscle-mode').addEventListener('click', async (event) =
 document.addEventListener('trennip-open-exercise', (event) => {
   const name = String(event.detail?.name || '').trim()
   if (!name) return
-  if (!planCellsData.length) planCellsData.push(emptyPlanColumn(1))
-  let columnIndex = 0
-  let rowIndex = -1
-  planCellsData.forEach((column, index) => {
-    if (rowIndex >= 0) return
-    const found = column.rows.findIndex((row) => row.text.trim().toLowerCase() === name.toLowerCase())
-    if (found >= 0) {
-      columnIndex = index
-      rowIndex = found
-    }
-  })
-  if (rowIndex < 0) {
-    const column = planCellsData[0]
-    if (!column.title.trim()) column.title = 'Lihased'
-    const empty = column.rows.findIndex((row) => !row.text.trim())
-    if (empty >= 0) column.rows[empty].text = name
-    else column.rows.push({ text: name, reps: '' })
-    rowIndex = column.rows.findIndex((row) => row.text === name)
+  selectedDay = todayPlanDay()
+  const match = findExercise(name)
+  const list = planCellsData.days[selectedDay]
+  let index = list.findIndex((item) => (match ? item.id === match.id : item.name?.toLowerCase() === name.toLowerCase()))
+  if (index < 0) {
+    list.push(match ? { id: match.id, sets: '', reps: '' } : { name, sets: '', reps: '' })
+    index = list.length - 1
     savePlan()
   }
-  setPlanEditing(true)
   showView('plan')
   requestAnimationFrame(() => {
-    const box = planCells.querySelectorAll('.plan-box')[columnIndex]
-    const field = box?.querySelectorAll('.plan-row input:not(.plan-reps)')[rowIndex]
-    field?.closest('.plan-row')?.scrollIntoView({ block: 'center' })
-    field?.focus()
+    const card = planList.querySelectorAll('.plan-card')[index]
+    card?.scrollIntoView({ block: 'center' })
+    card?.querySelector('input')?.focus()
   })
 })
 
@@ -984,9 +1086,9 @@ function applyDiary(data) {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(data.layout))
     applySavedLayout()
   }
-  if (Array.isArray(data.plan)) {
+  if (Array.isArray(data.plan) || data.plan?.v === 2) {
     localStorage.setItem(PLAN_KEY, JSON.stringify(data.plan))
-    planCellsData = loadPlanCells()
+    planCellsData = loadPlan()
     if (!planPanel.hidden) renderPlan()
   }
   if (typeof data.nutrition === 'string') {
@@ -1046,7 +1148,7 @@ function emptyAccountDiary() {
     choices: {},
     muscles: {},
     layout: sharedDiary.layout,
-    plan: [emptyPlanColumn(), emptyPlanColumn(), emptyPlanColumn()],
+    plan: emptyPlan(),
     nutrition: '',
     goal: '',
   }
@@ -1200,7 +1302,6 @@ function refreshLanguage() {
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
   if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
-  planEdit.textContent = planEditing ? t('done') : t('edit')
   renderAccount()
   markLanguage()
   if (!infoPage.hidden) {

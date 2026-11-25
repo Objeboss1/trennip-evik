@@ -1,0 +1,11 @@
+Exercise photos in this folder are resized copies of images from
+free-exercise-db by yuhonas:
+https://github.com/yuhonas/free-exercise-db
+
+That dataset is released under the Unlicense (public domain):
+https://unlicense.org
+
+It is based on the public-domain exercises.json dataset by Ollie Jennings:
+https://github.com/wrkout/exercises.json
+
+The app shows this credit under the training plan.
