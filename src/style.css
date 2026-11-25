@@ -593,22 +593,26 @@ td.day-locked {
 
 .muscle-3d {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.8fr);
-  gap: 0.9rem;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(8.4rem, 11.5rem);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.45rem 0.65rem;
+  align-items: stretch;
 }
 
-.muscle-stage-column,
 .muscle-stage,
-.muscle-canvas-wrap {
+.muscle-canvas-wrap,
+.muscle-filters,
+.muscle-source {
   min-width: 0;
 }
 
 .muscle-stage {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
-  min-height: 22rem;
-  height: min(58vh, 34rem);
+  height: calc(100dvh - 22rem);
+  min-height: 16rem;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 1.2rem;
@@ -617,11 +621,30 @@ td.day-locked {
     color-mix(in srgb, var(--accent) 10%, #0c1016);
 }
 
-.muscle-toolbar,
 .muscle-filters {
-  position: relative;
-  z-index: 2;
-  margin: 0.7rem 0.7rem 0;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: stretch;
+  gap: 0.28rem;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.muscle-filters button {
+  width: 100%;
+  min-height: 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.muscle-source {
+  grid-column: 1;
+  grid-row: 2;
 }
 
 .muscle-canvas-wrap {
@@ -648,8 +671,26 @@ td.day-locked {
   pointer-events: none;
 }
 
+.muscle-credit-open {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.muscle-credit-open[aria-expanded='true'] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: transparent;
+}
+
 .muscle-credit {
-  margin: 0.45rem 0.1rem 0;
+  margin: 0.4rem 0 0;
   color: var(--muted);
   font-size: 0.72rem;
   line-height: 1.4;
@@ -660,8 +701,10 @@ td.day-locked {
 }
 
 .muscle-info {
-  min-height: 12rem;
+  min-height: 8rem;
+  margin-top: 0.8rem;
   padding: 1rem;
+  scroll-margin-top: 0.8rem;
   border: 1px solid var(--line);
   border-radius: 1.2rem;
   background: var(--card);
@@ -690,7 +733,39 @@ td.day-locked {
   text-transform: uppercase;
 }
 
-.muscle-exercises,
+.muscle-exercises {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.muscle-exercises button {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+  border-radius: 0.95rem;
+  text-align: left;
+}
+
+.muscle-exercises img,
+.muscle-exercise-fallback {
+  width: 4.6rem;
+  height: 3.3rem;
+  flex: none;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--accent) 16%, #10141b);
+}
+
+.muscle-exercise-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .muscle-recent {
   display: flex;
   flex-wrap: wrap;
@@ -709,14 +784,68 @@ td.day-locked {
   font-weight: 750;
 }
 
-@media (max-width: 52rem) {
+.plan-place {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.15rem 0 0.8rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--card);
+}
+
+.plan-place img {
+  width: 4.4rem;
+  height: 3.2rem;
+  flex: none;
+  border-radius: 0.7rem;
+  object-fit: cover;
+}
+
+.plan-place p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.plan-place strong {
+  color: var(--ink);
+}
+
+#plan-place-cancel {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  color: var(--ink);
+  background: var(--card-2);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.plan-days.is-placing .plan-day {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+@media (max-width: 40rem) {
   .muscle-3d {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 7.4rem;
   }
 
-  .muscle-stage {
-    height: 46vh;
-    min-height: 18rem;
+  .muscle-filters button {
+    padding-inline: 0.4rem;
+    font-size: 0.74rem;
+  }
+
+  .plan-place {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  #plan-place-cancel {
+    margin-left: 0;
   }
 }
 

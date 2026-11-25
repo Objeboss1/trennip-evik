@@ -218,6 +218,14 @@
       <section class="panel" data-section="plan" hidden>
       <div id="plan-panel" class="plan-panel">
         <h2 class="muscles-title" data-i18n="strengthTitle">Jõutrenn</h2>
+        <div id="plan-place" class="plan-place" hidden>
+          <img id="plan-place-photo" alt="" />
+          <div>
+            <p data-i18n="planPlace">Vali päev, kuhu see harjutus läheb</p>
+            <strong id="plan-place-name"></strong>
+          </div>
+          <button type="button" id="plan-place-cancel" data-i18n="planPlaceCancel">Tühista</button>
+        </div>
         <div id="plan-days" class="plan-days"></div>
         <div id="plan-list" class="plan-list"></div>
         <button type="button" id="plan-add" class="plan-add-main" data-i18n="addExercise">Lisa harjutus</button>
@@ -226,87 +234,22 @@
       </section>
       <section class="panel" data-section="muscles" hidden>
       <h2 class="muscles-title" data-i18n="muscles">Lihased</h2>
-      <div class="muscle-mode">
-        <button type="button" data-muscle-mode="photos" aria-pressed="true"><span data-i18n="musclePhotos">Pildid</span></button>
-        <button type="button" data-muscle-mode="3d" aria-pressed="false"><span data-i18n="muscle3d">3D lihased</span></button>
-      </div>
-      <div id="muscle-3d" class="muscle-3d" hidden>
-        <div class="muscle-stage-column">
+      <div id="muscle-3d" class="muscle-3d">
         <div class="muscle-stage">
-          <div class="muscle-toolbar">
-            <button type="button" data-view3="front" aria-pressed="true" data-i18n="front">Eest</button>
-            <button type="button" data-view3="back" aria-pressed="false" data-i18n="backView">Tagant</button>
-            <button type="button" data-view3="side" aria-pressed="false" data-i18n="side">Kõrvalt</button>
-          </div>
-          <div id="muscle-filters" class="muscle-filters"></div>
           <div class="muscle-canvas-wrap">
             <canvas id="muscle-canvas"></canvas>
             <p id="muscle-status" class="muscle-status" data-i18n="muscleLoading">Laen 3D mudelit…</p>
           </div>
         </div>
-          <p class="muscle-credit">3D model: <a href="https://www.z-anatomy.com/" target="_blank" rel="noreferrer">Z-Anatomy</a> (CC BY-SA 4.0), based on BodyParts3D © Database Center for Life Science. Adapted in <a href="https://github.com/tiralonghipol/free-muscles" target="_blank" rel="noreferrer">free-muscles</a> by tiralonghipol.</p>
-        </div>
-        <aside id="muscle-info" class="muscle-info">
-          <p class="muscle-empty" data-i18n="musclePick">Vajuta lihasele.</p>
-        </aside>
-      </div>
-      <section class="body-views" aria-label="Keha">
-        <figure>
-          <div class="shot" data-view="eest">
-            <img src="/eest.png?v=2" alt="Eest" />
-            <button type="button" class="spot" data-spot="eest-olad" style="top: 17%; left: 34%" data-muscle="Õlad" title="Õlad" aria-label="Õlad"></button>
-            <button type="button" class="spot" data-spot="eest-rind" style="top: 23%; left: 50%" data-muscle="Rind" title="Rind" aria-label="Rind"></button>
-            <button type="button" class="spot" data-spot="eest-biitseps" style="top: 29%; left: 20%" data-muscle="Biitseps" title="Biitseps" aria-label="Biitseps"></button>
-            <button type="button" class="spot" data-spot="eest-kuunarvars" style="top: 38%; left: 16%" data-muscle="Küünarvars" title="Küünarvars" aria-label="Küünarvars"></button>
-            <button type="button" class="spot" data-spot="eest-kohu" style="top: 33%; left: 50%" data-muscle="Kõhulihased" title="Kõhulihased" aria-label="Kõhulihased"></button>
-            <button type="button" class="spot" data-spot="eest-kulg" style="top: 34%; left: 40%" data-muscle="Küljelihased" title="Küljelihased" aria-label="Küljelihased"></button>
-            <button type="button" class="spot" data-spot="eest-neli" style="top: 55%; left: 40%" data-muscle="Nelipealihas" title="Nelipealihas" aria-label="Nelipealihas"></button>
-            <button type="button" class="spot" data-spot="eest-lahend" style="top: 60%; left: 47%" data-muscle="Lähendajad" title="Lähendajad" aria-label="Lähendajad"></button>
-            <button type="button" class="spot" data-spot="eest-saar" style="top: 78%; left: 38%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
-          </div>
-          <figcaption data-i18n="front">Eest</figcaption>
-        </figure>
-        <figure>
-          <div class="shot" data-view="tagant">
-            <img src="/tagant.png?v=2" alt="Tagant" />
-            <button type="button" class="spot" data-spot="tagant-trapeets" style="top: 14%; left: 50%" data-muscle="Trapeets" title="Trapeets" aria-label="Trapeets"></button>
-            <button type="button" class="spot" data-spot="tagant-selg" style="top: 28%; left: 40%" data-muscle="Seljalihas" title="Seljalihas" aria-label="Seljalihas"></button>
-            <button type="button" class="spot" data-spot="tagant-triitseps" style="top: 30%; left: 80%" data-muscle="Triitseps" title="Triitseps" aria-label="Triitseps"></button>
-            <button type="button" class="spot" data-spot="tagant-alaselg" style="top: 38%; left: 50%" data-muscle="Alaselg" title="Alaselg" aria-label="Alaselg"></button>
-            <button type="button" class="spot" data-spot="tagant-tuhar" style="top: 46%; left: 42%" data-muscle="Tuhar" title="Tuhar" aria-label="Tuhar"></button>
-            <button type="button" class="spot" data-spot="tagant-reie" style="top: 60%; left: 40%" data-muscle="Reie tagakülg" title="Reie tagakülg" aria-label="Reie tagakülg"></button>
-            <button type="button" class="spot" data-spot="tagant-saar" style="top: 78%; left: 40%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
-          </div>
-          <figcaption data-i18n="backView">Tagant</figcaption>
-        </figure>
-        <figure>
-          <div class="shot" data-view="korvalt">
-            <img src="/korvalt.png?v=2" alt="Kõrvalt" />
-            <button type="button" class="spot" data-spot="korvalt-olad" style="top: 17%; left: 58%" data-muscle="Õlad" title="Õlad" aria-label="Õlad"></button>
-            <button type="button" class="spot" data-spot="korvalt-rind" style="top: 24%; left: 62%" data-muscle="Rind" title="Rind" aria-label="Rind"></button>
-            <button type="button" class="spot" data-spot="korvalt-kohu" style="top: 34%; left: 55%" data-muscle="Kõhulihased" title="Kõhulihased" aria-label="Kõhulihased"></button>
-            <button type="button" class="spot" data-spot="korvalt-neli" style="top: 55%; left: 52%" data-muscle="Nelipealihas" title="Nelipealihas" aria-label="Nelipealihas"></button>
-            <button type="button" class="spot" data-spot="korvalt-saar" style="top: 78%; left: 48%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
-          </div>
-          <figcaption data-i18n="side">Kõrvalt</figcaption>
-        </figure>
-      </section>
-      <div class="spot-edit">
-        <p class="spot-help" data-i18n="spotHelp">Ringi lisamiseks vajuta Muuda, vali pilt ja siis Lisa ring. Ringi saab lohistada. Lõpuks vajuta Salvesta.</p>
-        <button type="button" id="edit-spots" data-i18n="edit">Muuda</button>
-        <div id="spot-tools" class="spot-tools" hidden>
-          <label>
-            <span data-i18n="newSpot">Uus ring pildile</span>
-            <select id="spot-view">
-              <option value="eest" data-i18n="front">Eest</option>
-              <option value="tagant" data-i18n="backView">Tagant</option>
-              <option value="korvalt" data-i18n="side">Kõrvalt</option>
-            </select>
-          </label>
-          <button type="button" id="add-spot" data-i18n="addSpot">Lisa ring</button>
-          <button type="button" id="save-spots" data-i18n="save">Salvesta</button>
+        <div id="muscle-filters" class="muscle-filters"></div>
+        <div class="muscle-source">
+          <button type="button" id="muscle-credit-open" class="muscle-credit-open" aria-expanded="false" data-i18n="muscleSource">Allikas</button>
+          <p id="muscle-credit" class="muscle-credit" hidden>3D model: <a href="https://www.z-anatomy.com/" target="_blank" rel="noreferrer">Z-Anatomy</a> (CC BY-SA 4.0), based on BodyParts3D © Database Center for Life Science. Adapted in <a href="https://github.com/tiralonghipol/free-muscles" target="_blank" rel="noreferrer">free-muscles</a> by tiralonghipol.</p>
         </div>
       </div>
+      <aside id="muscle-info" class="muscle-info">
+        <p class="muscle-empty" data-i18n="musclePick">Vajuta lihasele.</p>
+      </aside>
       </section>
       <section class="panel nutrition-panel" data-section="nutrition" hidden>
         <h2 class="muscles-title" data-i18n="nutrition">Toitumine</h2>
@@ -394,24 +337,6 @@
             <div id="plan-groups" class="plan-groups"></div>
             <div id="plan-grid" class="plan-grid"></div>
           </div>
-        </div>
-      </div>
-      <div id="muscle" class="modal" hidden>
-        <div class="modal-card muscle-view">
-          <button type="button" class="back" id="muscle-back" data-i18n="close">Sulge</button>
-          <label>
-            <span data-i18n="muscleTitle">Pealkiri</span>
-            <input id="muscle-title" type="text" />
-          </label>
-          <button type="button" id="delete-open-spot" data-i18n="deleteSpot">Kustuta ring</button>
-          <label>
-            <span data-i18n="exercises">Harjutused</span>
-            <textarea id="muscle-exercises" rows="6" data-i18n-placeholder="exercisesHint" placeholder="Kirjuta, milliseid harjutusi teed"></textarea>
-          </label>
-          <label>
-            <span data-i18n="reps">Mitu korda</span>
-            <input id="muscle-reps" type="text" data-i18n-placeholder="repsHint" placeholder="Kirjuta, mitu korda" />
-          </label>
         </div>
       </div>
       <section id="day" class="modal" hidden>
