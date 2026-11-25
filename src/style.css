@@ -78,11 +78,68 @@ body {
 main {
   max-width: 68rem;
   margin: 0 auto;
-  padding: 3.5rem 1.25rem 4rem;
+  padding: 3.5rem 1.25rem 7rem;
 }
 
-.hero {
-  margin-bottom: 1.25rem;
+.hello {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.hello h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 4.2vw, 2.05rem);
+  font-weight: 760;
+  line-height: 1.15;
+}
+
+.hello-sub {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.65rem 0 0;
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 760;
+}
+
+.flame {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: #ff7a1a;
+}
+
+.hello-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--card-2);
+  font: inherit;
+  font-size: 1.45rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.hello-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .eyebrow {
@@ -339,32 +396,62 @@ h1 {
   line-height: 1;
 }
 
-.section-nav {
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 18;
   display: flex;
-  gap: 0.45rem;
-  overflow-x: auto;
-  margin: 0.15rem 0 0.85rem;
-  padding-bottom: 0.2rem;
-  scrollbar-width: none;
+  justify-content: space-around;
+  gap: 0.1rem;
+  padding: 0.45rem 0.35rem calc(0.35rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #10141c;
 }
 
-.section-nav button {
-  flex: none;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.55rem 0.9rem;
-  color: var(--ink);
-  background: var(--card-2);
+.tab-bar button {
+  position: relative;
+  flex: 1 1 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.15rem 0.1rem 0.7rem;
+  border: 0;
+  color: #8b93a7;
+  background: transparent;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.62rem;
   font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
   cursor: pointer;
 }
 
-.section-nav button[aria-pressed='true'] {
-  border-color: transparent;
+.tab-bar button svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.tab-bar button span {
+  display: block;
+  max-width: 100%;
+}
+
+.tab-bar button[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.tab-bar button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  bottom: 0.22rem;
+  width: 1.7rem;
+  height: 3px;
+  border-radius: 99px;
   background: var(--accent);
-  color: var(--accent-ink);
 }
 
 .panel > .muscles-title:first-child {

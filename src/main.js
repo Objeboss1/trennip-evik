@@ -22,7 +22,9 @@ const dayLabel = document.querySelector('#day-label')
 const daySummary = document.querySelector('#day-summary')
 const dayEdit = document.querySelector('#day-edit')
 const choiceButtons = [...document.querySelectorAll('[data-choice]')]
-const nowLabel = document.querySelector('#now')
+const helloTitle = document.querySelector('#hello-title')
+const streakCountNode = document.querySelector('#streak-count')
+const streakNode = document.querySelector('#streak')
 const today = new Date()
 let year = today.getFullYear()
 let month = today.getMonth()
@@ -45,16 +47,6 @@ function stampFromDate(date) {
   return `${date.getFullYear()}-${monthNumber}-${dayNumber}`
 }
 
-function formatNow(date) {
-  const weekday = monthTitle(weekdays()[date.getDay()])
-  const clock = date.toLocaleTimeString('et-EE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-  return `${weekday}, ${date.getDate()}. ${months()[date.getMonth()]} ${date.getFullYear()} ${clock}`
-}
-
 function shiftStamp(stamp, days) {
   const [stampYear, stampMonth, stampDay] = stamp.split('-').map(Number)
   const date = new Date(stampYear, stampMonth - 1, stampDay)
@@ -67,17 +59,64 @@ function isLocked(key) {
   return key < shiftStamp(todayStamp, -1)
 }
 
+function helloName() {
+  if (!account?.email) return ''
+  const named = (loadAccounts()[account.email]?.nimi || '').trim()
+  return named ? named.split(/\s+/)[0] : ''
+}
+
+function streakCount() {
+  if (!todayStamp) return 0
+  let cursor = todayStamp
+  if (!WENT.has(choiceName(choices[cursor]))) {
+    if (choiceName(choices[cursor])) return 0
+    cursor = shiftStamp(cursor, -1)
+  }
+  let count = 0
+  while (WENT.has(choiceName(choices[cursor]))) {
+    count += 1
+    cursor = shiftStamp(cursor, -1)
+    if (count > 4000) break
+  }
+  return count
+}
+
+function renderHello() {
+  const hour = new Date().getHours()
+  const greet = t(hour < 12 ? 'helloMorning' : hour < 18 ? 'helloDay' : 'helloEvening')
+  const name = helloName()
+  helloTitle.textContent = name ? `${greet}, ${name} 👋` : `${greet} 👋`
+  const count = streakCount()
+  streakCountNode.textContent = String(count)
+  streakNode.setAttribute('aria-label', `${count} ${t('streakDays')}`)
+  const record = account?.email ? loadAccounts()[account.email] : null
+  const photo = document.querySelector('#hello-photo')
+  const initial = document.querySelector('#hello-initial')
+  if (record?.photo) {
+    photo.src = record.photo
+    photo.hidden = false
+    initial.hidden = true
+  } else {
+    photo.hidden = true
+    photo.removeAttribute('src')
+    initial.hidden = false
+    const source = (record?.nimi || account?.email || '').trim()
+    initial.textContent = source ? source.slice(0, 1).toUpperCase() : '?'
+  }
+}
+
 function tick() {
   const date = new Date()
   const stamp = stampFromDate(date)
-  nowLabel.textContent = formatNow(date)
-  if (stamp === todayStamp) return
-  todayStamp = stamp
-  if (openKey && isLocked(openKey)) {
-    dayView.hidden = true
-    openKey = ''
+  if (stamp !== todayStamp) {
+    todayStamp = stamp
+    if (openKey && isLocked(openKey)) {
+      dayView.hidden = true
+      openKey = ''
+    }
+    if (!calendar.hidden) render()
   }
-  if (!calendar.hidden) render()
+  renderHello()
 }
 
 function loadChoices() {
@@ -92,6 +131,7 @@ function loadChoices() {
 function saveChoices(choices) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(choices))
   pushDiary()
+  renderHello()
 }
 
 const choices = loadChoices()
@@ -170,7 +210,7 @@ function showView(name) {
   for (const section of document.querySelectorAll('[data-section]')) {
     section.hidden = section.dataset.section !== name
   }
-  for (const button of document.querySelectorAll('.section-nav button')) {
+  for (const button of document.querySelectorAll('.tab-bar button')) {
     button.setAttribute('aria-pressed', String(button.dataset.view === name))
   }
   if (name === 'calendar') render()
@@ -1024,7 +1064,8 @@ function saveProfile(patch) {
   Object.assign(accounts[account.email], patch)
   saveAccounts(accounts)
   if (patch.photo !== undefined) showProfile()
-  else if (!accounts[account.email].photo && patch.nimi !== undefined) {
+  renderHello()
+  if (patch.photo === undefined && !accounts[account.email].photo && patch.nimi !== undefined) {
     document.querySelector('#profile-initial').textContent = (patch.nimi || account.email).slice(0, 1).toUpperCase() || '?'
   }
 }
@@ -1092,7 +1133,7 @@ function refreshLanguage() {
   applyLanguage()
   applyShortDays()
   render()
-  nowLabel.textContent = formatNow(new Date())
+  renderHello()
   if (openKey && !dayView.hidden) {
     const [dateYear, dateMonth, dateDay] = openKey.split('-').map(Number)
     const weekday = weekdays()[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
@@ -1110,6 +1151,18 @@ function refreshLanguage() {
     showSettings(openPanel ? openPanel.dataset.settingsPanel : 'menu')
   }
 }
+
+document.querySelector('#hello-avatar').addEventListener('click', () => {
+  if (account?.email) {
+    accountPanel.hidden = true
+    infoPage.hidden = false
+    showSettings('account')
+    return
+  }
+  infoPage.hidden = true
+  accountPanel.hidden = false
+  renderAccount()
+})
 
 document.querySelector('#settings-open').addEventListener('click', () => {
   accountPanel.hidden = true
@@ -1166,7 +1219,7 @@ for (const button of document.querySelectorAll('[data-theme-choice]')) {
   button.addEventListener('click', () => applyTheme(button.dataset.themeChoice))
 }
 
-document.querySelector('.section-nav').addEventListener('click', (event) => {
+document.querySelector('.tab-bar').addEventListener('click', (event) => {
   const button = event.target.closest('[data-view]')
   if (!button) return
   showView(button.dataset.view)
@@ -1201,6 +1254,7 @@ function renderAccount() {
     if (record?.liitus) account.liitus = joinedLabel(record.liitus)
     document.querySelector('#account-joined').textContent = account.liitus
   }
+  renderHello()
 }
 
 accountOpen.addEventListener('click', () => {
