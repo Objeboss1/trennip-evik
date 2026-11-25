@@ -297,11 +297,105 @@
             <input id="nutrition-custom-kcal" inputmode="numeric" data-i18n-placeholder="nutritionKcal" placeholder="kcal" />
             <button type="submit" data-i18n="nutritionMark">Märgi</button>
           </form>
-          <h3 data-i18n="nutritionFoods">Söögid</h3>
-          <div id="nutrition-foods" class="nutrition-picks"></div>
-          <h3 data-i18n="nutritionDrinks">Joogid</h3>
-          <div id="nutrition-drinks" class="nutrition-picks"></div>
+          <div class="nutrition-kinds">
+            <button type="button" id="nutrition-open-food" data-i18n="nutritionFoods">Söögid</button>
+            <button type="button" id="nutrition-open-drink" data-i18n="nutritionDrinks">Joogid</button>
+          </div>
+          <div id="nutrition-search" class="nutrition-search" hidden>
+            <input id="nutrition-query" type="search" data-i18n-placeholder="nutritionSearch" placeholder="Otsi" />
+            <div id="nutrition-results" class="nutrition-results"></div>
+            <form id="nutrition-amount" class="nutrition-amount" hidden>
+              <p id="nutrition-picked"></p>
+              <label>
+                <span id="nutrition-amount-label" data-i18n="nutritionGrams">Grammid</span>
+                <input id="nutrition-grams" inputmode="decimal" />
+              </label>
+              <p id="nutrition-preview" class="nutrition-preview"></p>
+              <button type="submit" data-i18n="nutritionMark">Märgi</button>
+            </form>
+          </div>
         </div>
+        <section id="body-card" class="body-card">
+          <button type="button" id="body-aim" class="body-aim">
+            <svg class="body-aim-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            <span id="body-aim-label">Kaota rasva</span>
+          </button>
+          <div class="body-weight">
+            <div class="body-weight-top">
+              <h3 data-i18n="bodyTitle">Kehakaal</h3>
+              <button type="button" id="body-update" data-i18n="bodyUpdate">Uuenda</button>
+            </div>
+            <div class="body-numbers">
+              <div>
+                <span data-i18n="bodyCurrent">Praegune</span>
+                <strong id="body-current">—</strong>
+              </div>
+              <div>
+                <span data-i18n="bodyGoal">Eesmärk</span>
+                <strong id="body-goal" class="is-goal">—</strong>
+              </div>
+            </div>
+            <p id="body-fat" class="body-fat" hidden></p>
+            <svg id="body-chart" class="body-chart" viewBox="0 0 360 168" role="img"></svg>
+            <p id="body-empty" class="nutrition-hint" hidden></p>
+            <form id="body-form" class="body-form" hidden>
+              <label>
+                <span data-i18n="bodyWeight">Kaal (kg)</span>
+                <input id="body-weight-input" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyGoalKg">Eesmärk (kg)</span>
+                <input id="body-goal-input" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyFat">Rasvaprotsent</span>
+                <input id="body-fat-input" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyWaist">Vöö (cm)</span>
+                <input id="body-waist" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyChest">Rind (cm)</span>
+                <input id="body-chest" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyHips">Puusad (cm)</span>
+                <input id="body-hips" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyArm">Õlavars (cm)</span>
+                <input id="body-arm" inputmode="decimal" />
+              </label>
+              <label>
+                <span data-i18n="bodyThigh">Reis (cm)</span>
+                <input id="body-thigh" inputmode="decimal" />
+              </label>
+              <button type="submit" data-i18n="save">Salvesta</button>
+            </form>
+          </div>
+          <div class="body-block">
+            <h3 data-i18n="bodyMeasures">Ümbermõõdud</h3>
+            <p id="body-measures" class="nutrition-hint"></p>
+          </div>
+          <div class="body-block">
+            <h3 data-i18n="bodyPhotos">Enne ja pärast</h3>
+            <div class="body-photos">
+              <label>
+                <span data-i18n="bodyBefore">Enne</span>
+                <img id="body-before-photo" alt="" hidden />
+                <span class="body-photo-add" data-i18n="bodyAddPhoto">Lisa pilt</span>
+                <input id="body-before" type="file" accept="image/*" />
+              </label>
+              <label>
+                <span data-i18n="bodyAfter">Pärast</span>
+                <img id="body-after-photo" alt="" hidden />
+                <span class="body-photo-add" data-i18n="bodyAddPhoto">Lisa pilt</span>
+                <input id="body-after" type="file" accept="image/*" />
+              </label>
+            </div>
+          </div>
+        </section>
       </section>
       <section class="panel" data-section="goals" hidden>
         <h2 class="muscles-title" data-i18n="goals">Eesmärgid</h2>

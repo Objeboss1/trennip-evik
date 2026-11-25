@@ -1458,8 +1458,60 @@ let nutritionSex = ''
 let nutritionFormOpen = false
 let nutritionDay = stampFromDate(new Date())
 
+function emptyBody() {
+  return { aim: 'lose', goalKg: '', weights: [], fat: [], measures: [], photos: { before: '', after: '' } }
+}
+
 function emptyNutrition() {
-  return { v: 1, sex: '', weight: '', height: '', age: '', kcal: 0, days: {} }
+  return { v: 1, sex: '', weight: '', height: '', age: '', kcal: 0, days: {}, body: emptyBody() }
+}
+
+function finiteIn(value, min, max) {
+  const number = Number(String(value ?? '').replace(',', '.'))
+  if (!Number.isFinite(number) || number < min || number > max) return null
+  return Math.round(number * 10) / 10
+}
+
+function cleanPoints(list, key, min, max) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item) => {
+      const value = finiteIn(item?.[key], min, max)
+      if (!item?.date || !/^\d{4}-\d{2}-\d{2}$/.test(item.date) || value === null) return null
+      return { date: item.date, [key]: value }
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-120)
+}
+
+function loadBody(saved) {
+  const body = emptyBody()
+  if (!saved || typeof saved !== 'object') return body
+  if (saved.aim === 'gain' || saved.aim === 'keep' || saved.aim === 'lose') body.aim = saved.aim
+  const goal = finiteIn(saved.goalKg, 30, 250)
+  body.goalKg = goal === null ? '' : goal
+  body.weights = cleanPoints(saved.weights, 'kg', 30, 250)
+  body.fat = cleanPoints(saved.fat, 'pct', 2, 70)
+  if (Array.isArray(saved.measures)) {
+    body.measures = saved.measures
+      .filter((item) => item && /^\d{4}-\d{2}-\d{2}$/.test(item.date))
+      .map((item) => {
+        const next = { date: item.date }
+        for (const key of ['waist', 'chest', 'hips', 'arm', 'thigh']) {
+          const value = finiteIn(item[key], 15, 220)
+          if (value !== null) next[key] = value
+        }
+        return next
+      })
+      .filter((item) => Object.keys(item).length > 1)
+      .slice(-80)
+  }
+  const photos = saved.photos && typeof saved.photos === 'object' ? saved.photos : {}
+  for (const side of ['before', 'after']) {
+    body.photos[side] = typeof photos[side] === 'string' && photos[side].startsWith('data:image/') ? photos[side] : ''
+  }
+  return body
 }
 
 function loadNutritionFrom(saved) {
@@ -1472,6 +1524,7 @@ function loadNutritionFrom(saved) {
     age: String(saved.age || ''),
     kcal: Number(saved.kcal) || 0,
     days: saved.days && typeof saved.days === 'object' ? saved.days : {},
+    body: loadBody(saved.body),
   }
 }
 
@@ -1552,7 +1605,10 @@ function renderNutrition() {
   for (const button of nutritionForm.querySelectorAll('[data-sex]')) {
     button.setAttribute('aria-pressed', String(button.dataset.sex === nutritionSex))
   }
-  if (!ready) return
+  if (!ready) {
+    renderBody()
+    return
+  }
   document.querySelector('#nutrition-kcal').textContent = nutritionCopy('target', nutritionState)
   document.querySelector('#nutrition-hint').textContent = nutritionCopy('hint')
   document.querySelector('#nutrition-date').textContent = dateLabel(nutritionDay)
@@ -1574,7 +1630,9 @@ function renderNutrition() {
     const food = item.id ? foodById(item.id) : null
     const line = document.createElement('li')
     const name = document.createElement('span')
-    name.textContent = food ? `${nutritionText(food)} · ${item.kcal} kcal` : `${item.name} · ${item.kcal} kcal`
+    const unit = food?.kind === 'drink' ? t('nutritionMl') : 'g'
+    const amount = item.amount ? `${item.amount} ${unit}` : ''
+    name.textContent = [food ? nutritionText(food) : item.name, amount, `${item.kcal} kcal`].filter(Boolean).join(' · ')
     const remove = document.createElement('button')
     remove.type = 'button'
     remove.textContent = '×'
@@ -1587,24 +1645,227 @@ function renderNutrition() {
     line.append(name, remove)
     log.append(line)
   })
-  for (const kind of ['food', 'drink']) {
-    const box = document.querySelector(kind === 'food' ? '#nutrition-foods' : '#nutrition-drinks')
-    box.replaceChildren()
-    for (const food of FOODS.filter((item) => item.kind === kind)) {
-      const card = document.createElement('button')
-      card.type = 'button'
-      card.className = 'nutrition-pick'
-      const title = document.createElement('strong')
-      title.textContent = nutritionText(food)
-      const meta = document.createElement('span')
-      meta.textContent = `${nutritionText(food.portion)} · ${food.kcal} kcal`
-      const note = document.createElement('small')
-      note.textContent = nutritionText(food.note)
-      card.append(title, meta, note)
-      card.addEventListener('click', () => addNutritionItem({ id: food.id, kcal: food.kcal }))
-      box.append(card)
+  renderSearch()
+  renderBody()
+}
+
+let nutritionKind = ''
+let pickedId = ''
+
+function foldText(value) {
+  return String(value || '').toLocaleLowerCase('et').normalize('NFD').replace(/\p{M}/gu, '')
+}
+
+function scaledKcal(food, amount) {
+  return Math.round((food.per100 * amount) / 100)
+}
+
+function matchingFoods() {
+  const query = foldText(document.querySelector('#nutrition-query').value)
+  const list = FOODS.filter((item) => item.kind === nutritionKind)
+  const found = query
+    ? list.filter((item) => [item.et, item.en, item.ru].some((name) => foldText(name).includes(query)))
+    : list.slice(0, 12)
+  return found.slice(0, 24)
+}
+
+function renderResults() {
+  const box = document.querySelector('#nutrition-results')
+  box.replaceChildren()
+  if (!nutritionKind) return
+  const foods = matchingFoods()
+  if (!foods.length) {
+    const empty = document.createElement('p')
+    empty.className = 'nutrition-hint'
+    empty.textContent = t('nutritionNone')
+    box.append(empty)
+    return
+  }
+  for (const food of foods) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'nutrition-result'
+    const name = document.createElement('span')
+    name.textContent = nutritionText(food)
+    const meta = document.createElement('small')
+    const unit = food.kind === 'drink' ? t('nutritionMl') : 'g'
+    meta.textContent = `${food.per100} / 100 ${unit}`
+    button.append(name, meta)
+    button.addEventListener('click', () => {
+      pickedId = food.id
+      document.querySelector('#nutrition-grams').value = ''
+      renderAmount()
+      document.querySelector('#nutrition-grams').focus()
+    })
+    box.append(button)
+  }
+}
+
+function renderAmount() {
+  const form = document.querySelector('#nutrition-amount')
+  const food = foodById(pickedId)
+  const visible = Boolean(food && food.kind === nutritionKind)
+  form.hidden = !visible
+  if (!visible) return
+  document.querySelector('#nutrition-picked').textContent = nutritionText(food)
+  document.querySelector('#nutrition-amount-label').textContent = food.kind === 'drink' ? t('nutritionMl') : t('nutritionGrams')
+  updateAmountPreview()
+}
+
+function updateAmountPreview() {
+  const food = foodById(pickedId)
+  const preview = document.querySelector('#nutrition-preview')
+  if (!food) {
+    preview.textContent = ''
+    return
+  }
+  const unit = food.kind === 'drink' ? t('nutritionMl') : 'g'
+  const amount = Number(String(document.querySelector('#nutrition-grams').value).replace(',', '.'))
+  if (!amount) {
+    preview.textContent = `${food.per100} kcal / 100 ${unit}`
+    return
+  }
+  preview.textContent = `${amount} ${unit} · ${scaledKcal(food, amount)} kcal`
+}
+
+function renderSearch() {
+  const panel = document.querySelector('#nutrition-search')
+  panel.hidden = !nutritionKind
+  document.querySelector('#nutrition-open-food').setAttribute('aria-pressed', String(nutritionKind === 'food'))
+  document.querySelector('#nutrition-open-drink').setAttribute('aria-pressed', String(nutritionKind === 'drink'))
+  renderResults()
+  renderAmount()
+}
+
+function formatBody(value) {
+  const number = Math.round(Number(value) * 10) / 10
+  return Number.isInteger(number) ? String(number) : number.toFixed(1)
+}
+
+function shortStamp(key) {
+  const [, month, day] = key.split('-')
+  return `${Number(day)}.${month}`
+}
+
+function chartIndexes(count) {
+  if (count <= 4) return [...Array(count).keys()]
+  return [0, Math.round((count - 1) / 3), Math.round(((count - 1) * 2) / 3), count - 1]
+}
+
+function renderWeightChart(points, goal) {
+  const svg = document.querySelector('#body-chart')
+  svg.replaceChildren()
+  if (points.length < 2) return
+  const ns = 'http://www.w3.org/2000/svg'
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c6f135'
+  const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8b9384'
+  const width = 360
+  const height = 168
+  const pad = { l: 8, r: 8, t: 14, b: 26 }
+  const innerW = width - pad.l - pad.r
+  const innerH = height - pad.t - pad.b
+  const values = points.map((point) => point.kg)
+  if (goal) values.push(goal)
+  const spread = Math.max(...values) - Math.min(...values)
+  const padValue = Math.max(0.8, spread * 0.2)
+  const min = Math.min(...values) - padValue
+  const max = Math.max(...values) + padValue
+  const x = (index) => pad.l + (index / (points.length - 1)) * innerW
+  const y = (value) => pad.t + (1 - (value - min) / (max - min)) * innerH
+  const coords = points.map((point, index) => [x(index), y(point.kg)])
+  const node = (name, attrs) => {
+    const element = document.createElementNS(ns, name)
+    for (const [key, value] of Object.entries(attrs)) element.setAttribute(key, String(value))
+    return element
+  }
+  for (const index of chartIndexes(points.length)) {
+    svg.append(node('line', {
+      x1: coords[index][0],
+      x2: coords[index][0],
+      y1: pad.t,
+      y2: pad.t + innerH,
+      stroke: muted,
+      'stroke-opacity': '0.35',
+      'stroke-dasharray': '3 4',
+    }))
+  }
+  if (goal) {
+    svg.append(node('line', {
+      x1: pad.l,
+      x2: width - pad.r,
+      y1: y(goal),
+      y2: y(goal),
+      stroke: accent,
+      'stroke-opacity': '0.85',
+      'stroke-dasharray': '1.5 4',
+      'stroke-width': '1.6',
+    }))
+  }
+  svg.append(node('polygon', {
+    points: `${coords.map((pair) => pair.join(',')).join(' ')} ${coords.at(-1)[0]},${pad.t + innerH} ${coords[0][0]},${pad.t + innerH}`,
+    fill: accent,
+    'fill-opacity': '0.16',
+  }))
+  svg.append(node('polyline', {
+    points: coords.map((pair) => pair.join(',')).join(' '),
+    fill: 'none',
+    stroke: accent,
+    'stroke-width': '3',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  }))
+  svg.append(node('circle', { cx: coords.at(-1)[0], cy: coords.at(-1)[1], r: '4.5', fill: accent }))
+  for (const index of chartIndexes(points.length)) {
+    const text = node('text', {
+      x: coords[index][0],
+      y: height - 6,
+      fill: muted,
+      'font-size': '11',
+      'text-anchor': index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle',
+    })
+    text.textContent = shortStamp(points[index].date)
+    svg.append(text)
+  }
+}
+
+function latestPoint(list) {
+  return list.length ? list[list.length - 1] : null
+}
+
+function renderBody() {
+  const body = nutritionState.body
+  document.querySelector('#body-aim-label').textContent = t(body.aim === 'gain' ? 'bodyGain' : body.aim === 'keep' ? 'bodyKeep' : 'bodyLose')
+  const current = latestPoint(body.weights)
+  const fat = latestPoint(body.fat)
+  document.querySelector('#body-current').textContent = current ? `${formatBody(current.kg)} kg` : '—'
+  document.querySelector('#body-goal').textContent = body.goalKg ? `${formatBody(body.goalKg)} kg` : '—'
+  const fatLine = document.querySelector('#body-fat')
+  fatLine.hidden = !fat
+  fatLine.textContent = fat ? `${t('bodyFat')} ${formatBody(fat.pct)}%` : ''
+  const empty = document.querySelector('#body-empty')
+  empty.hidden = body.weights.length >= 2
+  empty.textContent = body.weights.length ? t('bodyNeedMore') : t('bodyEmpty')
+  renderWeightChart(body.weights, Number(body.goalKg) || 0)
+  const measure = latestPoint(body.measures)
+  const bits = []
+  if (measure) {
+    for (const [key, label] of [['waist', 'bodyWaist'], ['chest', 'bodyChest'], ['hips', 'bodyHips'], ['arm', 'bodyArm'], ['thigh', 'bodyThigh']]) {
+      if (measure[key]) bits.push(`${t(label).replace(/\s*\(.*\)$/, '')} ${formatBody(measure[key])} cm`)
     }
   }
+  document.querySelector('#body-measures').textContent = bits.length ? `${bits.join(' · ')} · ${shortStamp(measure.date)}` : t('bodyMeasuresEmpty')
+  for (const side of ['before', 'after']) {
+    const image = document.querySelector(`#body-${side}-photo`)
+    image.hidden = !body.photos[side]
+    if (body.photos[side]) image.src = body.photos[side]
+  }
+}
+
+function upsertPoint(list, date, patch) {
+  const found = list.find((item) => item.date === date)
+  if (found) Object.assign(found, patch)
+  else list.push({ date, ...patch })
+  list.sort((a, b) => a.date.localeCompare(b.date))
 }
 
 document.querySelector('#nutrition-begin').addEventListener('click', () => {
@@ -1644,6 +1905,9 @@ nutritionForm.addEventListener('submit', (event) => {
   nutritionState.kcal = dailyCalories(nutritionState)
   nutritionFormOpen = false
   nutritionDay = stampFromDate(new Date())
+  if (!nutritionState.body.weights.length) {
+    nutritionState.body.weights.push({ date: nutritionDay, kg: weight })
+  }
   saveNutrition()
   renderNutrition()
 })
@@ -1678,6 +1942,109 @@ document.querySelector('#nutrition-custom').addEventListener('submit', (event) =
   document.querySelector('#nutrition-custom-kcal').value = ''
   addNutritionItem({ name, kcal: Math.round(kcal) })
 })
+
+function openNutritionKind(kind) {
+  nutritionKind = nutritionKind === kind ? '' : kind
+  pickedId = ''
+  document.querySelector('#nutrition-query').value = ''
+  document.querySelector('#nutrition-grams').value = ''
+  renderSearch()
+  if (nutritionKind) document.querySelector('#nutrition-query').focus()
+}
+
+document.querySelector('#nutrition-open-food').addEventListener('click', () => openNutritionKind('food'))
+document.querySelector('#nutrition-open-drink').addEventListener('click', () => openNutritionKind('drink'))
+document.querySelector('#nutrition-query').addEventListener('input', renderResults)
+document.querySelector('#nutrition-grams').addEventListener('input', updateAmountPreview)
+document.querySelector('#nutrition-amount').addEventListener('submit', (event) => {
+  event.preventDefault()
+  const food = foodById(pickedId)
+  const amount = finiteIn(document.querySelector('#nutrition-grams').value, 1, 2000)
+  if (!food || amount === null) return
+  addNutritionItem({ id: food.id, amount, kcal: scaledKcal(food, amount) })
+  pickedId = ''
+  document.querySelector('#nutrition-grams').value = ''
+  renderAmount()
+})
+
+document.querySelector('#body-aim').addEventListener('click', () => {
+  const order = ['lose', 'gain', 'keep']
+  nutritionState.body.aim = order[(order.indexOf(nutritionState.body.aim) + 1) % order.length]
+  saveNutrition()
+  renderBody()
+})
+
+document.querySelector('#body-update').addEventListener('click', () => {
+  const form = document.querySelector('#body-form')
+  form.hidden = !form.hidden
+  if (form.hidden) return
+  const body = nutritionState.body
+  const current = latestPoint(body.weights)
+  const fat = latestPoint(body.fat)
+  const measure = latestPoint(body.measures) || {}
+  document.querySelector('#body-weight-input').value = current ? String(current.kg) : ''
+  document.querySelector('#body-goal-input').value = body.goalKg ? String(body.goalKg) : ''
+  document.querySelector('#body-fat-input').value = fat ? String(fat.pct) : ''
+  document.querySelector('#body-waist').value = measure.waist || ''
+  document.querySelector('#body-chest').value = measure.chest || ''
+  document.querySelector('#body-hips').value = measure.hips || ''
+  document.querySelector('#body-arm').value = measure.arm || ''
+  document.querySelector('#body-thigh').value = measure.thigh || ''
+})
+
+document.querySelector('#body-form').addEventListener('submit', (event) => {
+  event.preventDefault()
+  const weight = finiteIn(document.querySelector('#body-weight-input').value, 30, 250)
+  const goal = finiteIn(document.querySelector('#body-goal-input').value, 30, 250)
+  const fat = finiteIn(document.querySelector('#body-fat-input').value, 2, 70)
+  const waist = finiteIn(document.querySelector('#body-waist').value, 40, 200)
+  const chest = finiteIn(document.querySelector('#body-chest').value, 40, 200)
+  const hips = finiteIn(document.querySelector('#body-hips').value, 40, 200)
+  const arm = finiteIn(document.querySelector('#body-arm').value, 15, 80)
+  const thigh = finiteIn(document.querySelector('#body-thigh').value, 20, 120)
+  const fields = [
+    document.querySelector('#body-weight-input'),
+    document.querySelector('#body-goal-input'),
+    document.querySelector('#body-fat-input'),
+    document.querySelector('#body-waist'),
+    document.querySelector('#body-chest'),
+    document.querySelector('#body-hips'),
+    document.querySelector('#body-arm'),
+    document.querySelector('#body-thigh'),
+  ]
+  const parsed = [weight, goal, fat, waist, chest, hips, arm, thigh]
+  const invalid = parsed.some((value, index) => value === null && fields[index].value.trim())
+  if (invalid || parsed.every((value) => value === null)) return
+  const date = stampFromDate(new Date())
+  const body = nutritionState.body
+  if (goal !== null) body.goalKg = goal
+  if (weight !== null) upsertPoint(body.weights, date, { kg: weight })
+  if (fat !== null) upsertPoint(body.fat, date, { pct: fat })
+  const measures = { waist, chest, hips, arm, thigh }
+  if (Object.values(measures).some((value) => value !== null)) {
+    const next = {}
+    for (const [key, value] of Object.entries(measures)) if (value !== null) next[key] = value
+    upsertPoint(body.measures, date, next)
+  }
+  saveNutrition()
+  document.querySelector('#body-form').hidden = true
+  renderBody()
+})
+
+for (const side of ['before', 'after']) {
+  document.querySelector(`#body-${side}`).addEventListener('change', async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    try {
+      nutritionState.body.photos[side] = await readPhoto(file)
+      saveNutrition()
+      renderBody()
+    } catch {
+      nutritionState.body.photos[side] = nutritionState.body.photos[side]
+    }
+  })
+}
 
 function collectDiary() {
   return {
