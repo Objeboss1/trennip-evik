@@ -310,7 +310,55 @@
       </section>
       <section class="panel nutrition-panel" data-section="nutrition" hidden>
         <h2 class="muscles-title" data-i18n="nutrition">Toitumine</h2>
-        <textarea id="nutrition" class="nutrition" rows="10"></textarea>
+        <div id="nutrition-start" class="nutrition-start">
+          <p data-i18n="nutritionEmpty">Siin ei ole veel midagi.</p>
+          <button type="button" id="nutrition-begin" data-i18n="nutritionBegin">Alusta</button>
+        </div>
+        <form id="nutrition-form" class="nutrition-form" hidden>
+          <label>
+            <span data-i18n="nutritionWeight">Kaal (kg)</span>
+            <input id="nutrition-weight" inputmode="decimal" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="nutritionHeight">Pikkus (cm)</span>
+            <input id="nutrition-height" inputmode="numeric" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="nutritionAge">Vanus</span>
+            <input id="nutrition-age" inputmode="numeric" autocomplete="off" />
+          </label>
+          <div class="nutrition-sex" role="group">
+            <span data-i18n="nutritionSex">Sugu</span>
+            <div>
+              <button type="button" data-sex="m" data-i18n="nutritionMale">Mees</button>
+              <button type="button" data-sex="f" data-i18n="nutritionFemale">Naine</button>
+            </div>
+          </div>
+          <p id="nutrition-error" class="nutrition-error" hidden></p>
+          <button type="submit" data-i18n="nutritionCalc">Arvuta kalorid</button>
+        </form>
+        <div id="nutrition-board" hidden>
+          <p id="nutrition-kcal" class="nutrition-kcal"></p>
+          <p id="nutrition-hint" class="nutrition-hint"></p>
+          <button type="button" id="nutrition-edit" class="nutrition-edit" data-i18n="nutritionEdit">Muuda andmeid</button>
+          <div class="nutrition-nav">
+            <button type="button" id="nutrition-prev" aria-label="Eelmine päev">‹</button>
+            <p id="nutrition-date"></p>
+            <button type="button" id="nutrition-next" aria-label="Järgmine päev">›</button>
+          </div>
+          <p id="nutrition-status" class="nutrition-status"></p>
+          <div class="nutrition-bar" aria-hidden="true"><span id="nutrition-fill"></span></div>
+          <ul id="nutrition-log" class="nutrition-log"></ul>
+          <form id="nutrition-custom" class="nutrition-custom">
+            <input id="nutrition-custom-name" data-i18n-placeholder="nutritionCustom" placeholder="Mida sõid?" />
+            <input id="nutrition-custom-kcal" inputmode="numeric" data-i18n-placeholder="nutritionKcal" placeholder="kcal" />
+            <button type="submit" data-i18n="nutritionMark">Märgi</button>
+          </form>
+          <h3 data-i18n="nutritionFoods">Söögid</h3>
+          <div id="nutrition-foods" class="nutrition-picks"></div>
+          <h3 data-i18n="nutritionDrinks">Joogid</h3>
+          <div id="nutrition-drinks" class="nutrition-picks"></div>
+        </div>
       </section>
       <section class="panel" data-section="goals" hidden>
         <h2 class="muscles-title" data-i18n="goals">Eesmärgid</h2>

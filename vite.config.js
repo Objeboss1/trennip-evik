@@ -38,7 +38,9 @@ function mergeDiary(base, incoming) {
       }
     }
   }
-  if (incoming?.nutrition?.trim()) next.nutrition = incoming.nutrition
+  const nutrition = incoming?.nutrition
+  if (typeof nutrition === 'string' && nutrition.trim()) next.nutrition = nutrition
+  if (nutrition && typeof nutrition === 'object' && nutrition.kcal) next.nutrition = nutrition
   if (incoming?.goal?.trim()) next.goal = incoming.goal
   if (hasPlan(incoming?.plan)) next.plan = incoming.plan
   if (incoming?.layout?.spots?.length) next.layout = incoming.layout

@@ -2,6 +2,7 @@ import './style.css'
 import sharedDiary from './shared-diary.json'
 import { applyLanguage, getLang, months, setLang, t, weekdays } from './i18n.js'
 import { EXERCISES, EXERCISE_GROUPS, exerciseById, findExercise } from './exercises.js'
+import { FOODS, foodById } from './foods.js'
 
 const CHOICE_KEYS = {
   Jooksmine: 'run',
@@ -1048,20 +1049,246 @@ document.addEventListener('trennip-open-exercise', (event) => {
   })
 })
 
-const nutrition = document.querySelector('#nutrition')
 const goal = document.querySelector('#goal')
 const GOAL_KEY = 'treeningpaevik-eesmark'
-const savedNutrition = localStorage.getItem('treeningpaevik-toitumine')
-if (savedNutrition) nutrition.value = savedNutrition
 const savedGoal = localStorage.getItem(GOAL_KEY)
 if (savedGoal) goal.value = savedGoal
-nutrition.addEventListener('input', () => {
-  localStorage.setItem('treeningpaevik-toitumine', nutrition.value)
-  pushDiary()
-})
 goal.addEventListener('input', () => {
   localStorage.setItem(GOAL_KEY, goal.value)
   pushDiary()
+})
+
+const NUTRITION_KEY = 'treeningpaevik-toitumine'
+const nutritionStart = document.querySelector('#nutrition-start')
+const nutritionForm = document.querySelector('#nutrition-form')
+const nutritionBoard = document.querySelector('#nutrition-board')
+const nutritionError = document.querySelector('#nutrition-error')
+const nutritionWeight = document.querySelector('#nutrition-weight')
+const nutritionHeight = document.querySelector('#nutrition-height')
+const nutritionAge = document.querySelector('#nutrition-age')
+let nutritionSex = ''
+let nutritionFormOpen = false
+let nutritionDay = stampFromDate(new Date())
+
+function emptyNutrition() {
+  return { v: 1, sex: '', weight: '', height: '', age: '', kcal: 0, days: {} }
+}
+
+function loadNutritionFrom(saved) {
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return emptyNutrition()
+  return {
+    v: 1,
+    sex: saved.sex === 'f' ? 'f' : saved.sex === 'm' ? 'm' : '',
+    weight: String(saved.weight || ''),
+    height: String(saved.height || ''),
+    age: String(saved.age || ''),
+    kcal: Number(saved.kcal) || 0,
+    days: saved.days && typeof saved.days === 'object' ? saved.days : {},
+  }
+}
+
+function loadNutrition() {
+  return loadNutritionFrom(loadJson(NUTRITION_KEY))
+}
+
+let nutritionState = loadNutrition()
+
+function saveNutrition() {
+  localStorage.setItem(NUTRITION_KEY, JSON.stringify(nutritionState))
+  pushDiary()
+}
+
+function nutritionText(value) {
+  return value?.[getLang()] || value?.et || ''
+}
+
+function dailyCalories(profile) {
+  const weight = Number(profile.weight)
+  const height = Number(profile.height)
+  const age = Number(profile.age)
+  const base = 10 * weight + 6.25 * height - 5 * age
+  const bmr = profile.sex === 'f' ? base - 161 : base + 5
+  return Math.round((bmr * 1.55) / 10) * 10
+}
+
+function nutritionCopy(kind, values = {}) {
+  const lang = getLang()
+  const lines = {
+    target: {
+      et: () => `Sinu päevane kogus on ${values.kcal} kcal.`,
+      en: () => `Your daily amount is ${values.kcal} kcal.`,
+      ru: () => `Твоя дневная норма — ${values.kcal} ккал.`,
+    },
+    hint: {
+      et: () => 'Arvestatud on mõõduka treeninguga. See on hinnang, mitte arsti soovitus.',
+      en: () => 'This assumes moderate training. It is an estimate, not medical advice.',
+      ru: () => 'Расчёт для умеренных тренировок. Это оценка, не совет врача.',
+    },
+    left: {
+      et: () => `Söödud ${values.eaten} / ${values.kcal} kcal. Jäänud ${values.left} kcal.`,
+      en: () => `Eaten ${values.eaten} / ${values.kcal} kcal. ${values.left} kcal left.`,
+      ru: () => `Съедено ${values.eaten} / ${values.kcal} ккал. Осталось ${values.left} ккал.`,
+    },
+    over: {
+      et: () => `Söödud ${values.eaten} / ${values.kcal} kcal. Üle ${values.over} kcal.`,
+      en: () => `Eaten ${values.eaten} / ${values.kcal} kcal. ${values.over} kcal over.`,
+      ru: () => `Съедено ${values.eaten} / ${values.kcal} ккал. Сверх нормы ${values.over} ккал.`,
+    },
+    emptyLog: {
+      et: () => 'Sellel päeval ei ole veel midagi märgitud.',
+      en: () => 'Nothing is logged for this day yet.',
+      ru: () => 'За этот день пока ничего не отмечено.',
+    },
+  }
+  const pack = lines[kind]
+  return (pack[lang] || pack.et)()
+}
+
+function dayItems() {
+  const items = nutritionState.days[nutritionDay]
+  return Array.isArray(items) ? items : []
+}
+
+function addNutritionItem(item) {
+  const next = dayItems().concat(item)
+  nutritionState.days[nutritionDay] = next
+  saveNutrition()
+  renderNutrition()
+}
+
+function renderNutrition() {
+  const ready = nutritionState.kcal > 0 && !nutritionFormOpen
+  nutritionStart.hidden = ready || nutritionFormOpen
+  nutritionForm.hidden = !nutritionFormOpen
+  nutritionBoard.hidden = !ready
+  for (const button of nutritionForm.querySelectorAll('[data-sex]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.sex === nutritionSex))
+  }
+  if (!ready) return
+  document.querySelector('#nutrition-kcal').textContent = nutritionCopy('target', nutritionState)
+  document.querySelector('#nutrition-hint').textContent = nutritionCopy('hint')
+  document.querySelector('#nutrition-date').textContent = dateLabel(nutritionDay)
+  document.querySelector('#nutrition-next').disabled = nutritionDay >= stampFromDate(new Date())
+  const eaten = dayItems().reduce((sum, item) => sum + (Number(item.kcal) || 0), 0)
+  const left = Math.max(nutritionState.kcal - eaten, 0)
+  document.querySelector('#nutrition-status').textContent = eaten > nutritionState.kcal
+    ? nutritionCopy('over', { ...nutritionState, eaten, over: eaten - nutritionState.kcal })
+    : nutritionCopy('left', { ...nutritionState, eaten, left })
+  document.querySelector('#nutrition-fill').style.width = `${Math.min(100, Math.round((eaten / nutritionState.kcal) * 100))}%`
+  const log = document.querySelector('#nutrition-log')
+  log.replaceChildren()
+  if (!dayItems().length) {
+    const empty = document.createElement('li')
+    empty.textContent = nutritionCopy('emptyLog')
+    log.append(empty)
+  }
+  dayItems().forEach((item, index) => {
+    const food = item.id ? foodById(item.id) : null
+    const line = document.createElement('li')
+    const name = document.createElement('span')
+    name.textContent = food ? `${nutritionText(food)} · ${item.kcal} kcal` : `${item.name} · ${item.kcal} kcal`
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.textContent = '×'
+    remove.setAttribute('aria-label', t('planRemove'))
+    remove.addEventListener('click', () => {
+      nutritionState.days[nutritionDay] = dayItems().filter((_, itemIndex) => itemIndex !== index)
+      saveNutrition()
+      renderNutrition()
+    })
+    line.append(name, remove)
+    log.append(line)
+  })
+  for (const kind of ['food', 'drink']) {
+    const box = document.querySelector(kind === 'food' ? '#nutrition-foods' : '#nutrition-drinks')
+    box.replaceChildren()
+    for (const food of FOODS.filter((item) => item.kind === kind)) {
+      const card = document.createElement('button')
+      card.type = 'button'
+      card.className = 'nutrition-pick'
+      const title = document.createElement('strong')
+      title.textContent = nutritionText(food)
+      const meta = document.createElement('span')
+      meta.textContent = `${nutritionText(food.portion)} · ${food.kcal} kcal`
+      const note = document.createElement('small')
+      note.textContent = nutritionText(food.note)
+      card.append(title, meta, note)
+      card.addEventListener('click', () => addNutritionItem({ id: food.id, kcal: food.kcal }))
+      box.append(card)
+    }
+  }
+}
+
+document.querySelector('#nutrition-begin').addEventListener('click', () => {
+  nutritionFormOpen = true
+  nutritionSex = nutritionState.sex
+  nutritionWeight.value = nutritionState.weight
+  nutritionHeight.value = nutritionState.height
+  nutritionAge.value = nutritionState.age
+  if (!nutritionAge.value && account?.email) {
+    const record = loadAccounts()[account.email]
+    if (record?.vanus) nutritionAge.value = record.vanus
+  }
+  nutritionError.hidden = true
+  renderNutrition()
+})
+
+nutritionForm.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-sex]')
+  if (!button) return
+  nutritionSex = button.dataset.sex
+  renderNutrition()
+})
+
+nutritionForm.addEventListener('submit', (event) => {
+  event.preventDefault()
+  const weight = Number(String(nutritionWeight.value).replace(',', '.'))
+  const height = Number(nutritionHeight.value)
+  const age = Number(nutritionAge.value)
+  const ok = weight >= 30 && weight <= 250 && height >= 120 && height <= 230 && age >= 10 && age <= 100 && (nutritionSex === 'm' || nutritionSex === 'f')
+  nutritionError.hidden = ok
+  nutritionError.textContent = ok ? '' : t('nutritionBad')
+  if (!ok) return
+  nutritionState.sex = nutritionSex
+  nutritionState.weight = String(weight)
+  nutritionState.height = String(height)
+  nutritionState.age = String(age)
+  nutritionState.kcal = dailyCalories(nutritionState)
+  nutritionFormOpen = false
+  nutritionDay = stampFromDate(new Date())
+  saveNutrition()
+  renderNutrition()
+})
+
+document.querySelector('#nutrition-edit').addEventListener('click', () => {
+  nutritionFormOpen = true
+  nutritionSex = nutritionState.sex
+  nutritionWeight.value = nutritionState.weight
+  nutritionHeight.value = nutritionState.height
+  nutritionAge.value = nutritionState.age
+  renderNutrition()
+})
+
+document.querySelector('#nutrition-prev').addEventListener('click', () => {
+  nutritionDay = shiftStamp(nutritionDay, -1)
+  renderNutrition()
+})
+
+document.querySelector('#nutrition-next').addEventListener('click', () => {
+  const next = shiftStamp(nutritionDay, 1)
+  if (next > stampFromDate(new Date())) return
+  nutritionDay = next
+  renderNutrition()
+})
+
+document.querySelector('#nutrition-custom').addEventListener('submit', (event) => {
+  event.preventDefault()
+  const name = document.querySelector('#nutrition-custom-name').value.trim()
+  const kcal = Number(document.querySelector('#nutrition-custom-kcal').value)
+  if (!name || !Number.isFinite(kcal) || kcal < 0 || kcal > 5000) return
+  document.querySelector('#nutrition-custom-name').value = ''
+  document.querySelector('#nutrition-custom-kcal').value = ''
+  addNutritionItem({ name, kcal: Math.round(kcal) })
 })
 
 function collectDiary() {
@@ -1070,7 +1297,7 @@ function collectDiary() {
     muscles,
     layout: loadJson(LAYOUT_KEY),
     plan: planCellsData,
-    nutrition: nutrition.value,
+    nutrition: nutritionState,
     goal: goal.value,
   }
 }
@@ -1091,9 +1318,11 @@ function applyDiary(data) {
     planCellsData = loadPlan()
     if (!planPanel.hidden) renderPlan()
   }
-  if (typeof data.nutrition === 'string') {
-    localStorage.setItem('treeningpaevik-toitumine', data.nutrition)
-    nutrition.value = data.nutrition
+  if (data.nutrition && typeof data.nutrition === 'object' && !Array.isArray(data.nutrition)) {
+    nutritionState = loadNutritionFrom(data.nutrition)
+    localStorage.setItem(NUTRITION_KEY, JSON.stringify(nutritionState))
+    nutritionFormOpen = false
+    renderNutrition()
   }
   if (typeof data.goal === 'string') {
     localStorage.setItem(GOAL_KEY, data.goal)
@@ -1302,6 +1531,7 @@ function refreshLanguage() {
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
   if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
+  renderNutrition()
   renderAccount()
   markLanguage()
   if (!infoPage.hidden) {
@@ -1501,6 +1731,7 @@ if (!account?.email && !loadJson(GUEST_KEY)) {
   localStorage.setItem(GUEST_KEY, JSON.stringify(collectDiary()))
 }
 
+renderNutrition()
 tick()
 setInterval(tick, 1000)
 render()

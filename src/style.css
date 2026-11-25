@@ -1184,6 +1184,224 @@ body.moving-spots .spot {
   margin-top: 0;
 }
 
+.nutrition-start,
+.nutrition-form,
+.nutrition-board h3 {
+  margin-top: 0.4rem;
+}
+
+.nutrition-start {
+  display: grid;
+  gap: 0.85rem;
+}
+
+#nutrition-begin {
+  width: 100%;
+}
+
+.nutrition-start p,
+.nutrition-hint,
+.nutrition-error,
+.nutrition-pick small,
+.nutrition-log li {
+  color: var(--muted);
+}
+
+.nutrition-start p,
+.nutrition-kcal,
+.nutrition-status,
+.nutrition-date {
+  margin: 0;
+}
+
+.nutrition-kcal {
+  color: var(--ink);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.nutrition-hint,
+.nutrition-status {
+  margin-top: 0.35rem;
+  line-height: 1.45;
+}
+
+#nutrition-begin,
+.nutrition-form button[type='submit'],
+.nutrition-custom button,
+.nutrition-sex button,
+.nutrition-edit,
+.nutrition-nav button,
+.nutrition-log button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  color: var(--ink);
+  background: var(--card-2);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+#nutrition-begin,
+.nutrition-form button[type='submit'],
+.nutrition-custom button,
+.nutrition-sex button[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.nutrition-form,
+.nutrition-custom {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.nutrition-form label,
+.nutrition-sex {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.nutrition-form input,
+.nutrition-custom input {
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 12%, #0c1016);
+  font: inherit;
+}
+
+.nutrition-sex div,
+.nutrition-nav,
+.nutrition-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.nutrition-error {
+  margin: 0;
+}
+
+.nutrition-nav {
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.nutrition-nav p {
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+}
+
+.nutrition-nav button {
+  width: 2.4rem;
+  padding: 0.4rem 0;
+}
+
+.nutrition-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.nutrition-bar {
+  height: 0.7rem;
+  margin-top: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, #10141b);
+}
+
+.nutrition-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.nutrition-log {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nutrition-log li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.nutrition-log button {
+  width: 2rem;
+  padding: 0.25rem 0;
+}
+
+.nutrition-custom input:first-child {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.nutrition-custom input:nth-child(2) {
+  width: 5.5rem;
+}
+
+@media (max-width: 40rem) {
+  .nutrition-custom {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .nutrition-custom input,
+  .nutrition-custom button,
+  .nutrition-custom input:nth-child(2) {
+    width: 100%;
+  }
+}
+
+.nutrition-board h3 {
+  margin: 1.1rem 0 0.55rem;
+  color: var(--ink);
+}
+
+.nutrition-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.55rem;
+}
+
+.nutrition-pick {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nutrition-pick span {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.nutrition-edit {
+  margin-top: 0.7rem;
+}
+
 .nutrition {
   display: block;
   width: 100%;
