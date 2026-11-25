@@ -217,6 +217,7 @@ function showView(name) {
   if (name === 'calendar') render()
   if (name === 'plan') renderPlan()
   if (name === 'records') renderStats()
+  if (name === 'goals') renderGoals()
   document.dispatchEvent(new CustomEvent('trennip-view', { detail: name }))
 }
 
@@ -454,11 +455,131 @@ function barChart(title, items, emptyText) {
   return block
 }
 
-function renderStats() {
-  const runs = Object.entries(choices)
+const RECORDS_KEY = 'treeningpaevik-rekordid'
+const MANUAL_RECORDS = [
+  { id: 'bench', label: 'recordBench', unit: 'recordKg' },
+  { id: 'squat', label: 'recordSquat', unit: 'recordKg' },
+  { id: 'deadlift', label: 'recordDead', unit: 'recordKg' },
+  { id: 'pullups', label: 'recordPull', unit: 'recordReps' },
+  { id: 'plank', label: 'recordPlank', unit: 'recordMin' },
+]
+
+function emptyRecords() {
+  return { bench: '', squat: '', deadlift: '', pullups: '', plank: '' }
+}
+
+function loadRecordsFrom(saved) {
+  const next = emptyRecords()
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return next
+  for (const key of Object.keys(next)) next[key] = String(saved[key] || '').slice(0, 8)
+  return next
+}
+
+let recordsState = loadRecordsFrom(loadJson(RECORDS_KEY))
+
+function saveRecords() {
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(recordsState))
+  pushDiary()
+}
+
+function runEntries() {
+  return Object.entries(choices)
     .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
-    .filter((entry) => needsRun(entry.choice))
+    .filter((entry) => needsRun(entry.choice) && entry.key <= stampFromDate(new Date()))
     .sort((a, b) => a.key.localeCompare(b.key))
+}
+
+function formatClock(seconds) {
+  const total = Math.round(seconds)
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const rest = total % 60
+  if (hours) return `${hours}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
+  return `${minutes}:${String(rest).padStart(2, '0')}`
+}
+
+function bestPace(entries) {
+  return entries
+    .filter((entry) => paceSeconds(entry.pace))
+    .sort((a, b) => paceSeconds(a.pace) - paceSeconds(b.pace))[0] || null
+}
+
+function bestDistanceTime(entries, kilometres) {
+  return entries
+    .filter((entry) => amountNumber(entry.amount) >= kilometres && paceSeconds(entry.pace))
+    .map((entry) => ({ ...entry, seconds: paceSeconds(entry.pace) * kilometres }))
+    .sort((a, b) => a.seconds - b.seconds)[0] || null
+}
+
+function recordCard(title, value, detail) {
+  const card = document.createElement('article')
+  card.className = 'record-card'
+  const heading = document.createElement('h3')
+  heading.textContent = title
+  const number = document.createElement('p')
+  number.className = 'record-value'
+  if (!value) number.classList.add('is-empty')
+  number.textContent = value || t('recordEmpty')
+  card.append(heading, number)
+  if (detail) {
+    const note = document.createElement('small')
+    note.textContent = detail
+    card.append(note)
+  }
+  return card
+}
+
+function renderStats() {
+  const runs = runEntries()
+  const fastestKm = bestPace(runs)
+  const fastest5 = bestDistanceTime(runs, 5)
+  const fastest10 = bestDistanceTime(runs, 10)
+  const longest = runs.filter((entry) => amountNumber(entry.amount)).sort((a, b) => amountNumber(b.amount) - amountNumber(a.amount))[0]
+  const total = Math.round(runs.reduce((sum, entry) => sum + amountNumber(entry.amount), 0) * 10) / 10
+  const auto = document.createElement('section')
+  auto.className = 'record-head'
+  const autoTitle = document.createElement('h3')
+  autoTitle.textContent = t('recordsAuto')
+  const autoHint = document.createElement('p')
+  autoHint.textContent = t('recordsHint')
+  const grid = document.createElement('div')
+  grid.className = 'record-grid'
+  grid.append(
+    recordCard('record1k', fastestKm ? fastestKm.pace : '', fastestKm ? dateLabel(fastestKm.key) : t('recordNeedPace')),
+    recordCard('record5k', fastest5 ? formatClock(fastest5.seconds) : '', fastest5 ? `${dateLabel(fastest5.key)}. ${t('recordFromPace')}` : t('recordNeed5')),
+    recordCard('record10k', fastest10 ? formatClock(fastest10.seconds) : '', fastest10 ? `${dateLabel(fastest10.key)}. ${t('recordFromPace')}` : t('recordNeed10')),
+    recordCard('recordLong', longest ? `${amountNumber(longest.amount)} km` : '', longest ? dateLabel(longest.key) : t('recordNeedDistance')),
+    recordCard('recordTotal', total ? `${Number.isInteger(total) ? total : total.toFixed(1)} km` : '', total ? '' : t('recordNeedDistance')),
+  )
+  for (const card of grid.querySelectorAll('h3')) card.textContent = t(card.textContent)
+  auto.append(autoTitle, autoHint, grid)
+
+  const manual = document.createElement('section')
+  manual.className = 'record-manual'
+  const manualTitle = document.createElement('h3')
+  manualTitle.textContent = t('recordsManual')
+  const manualHint = document.createElement('p')
+  manualHint.textContent = t('recordsManualHint')
+  const manualGrid = document.createElement('div')
+  manualGrid.className = 'record-manual-grid'
+  for (const field of MANUAL_RECORDS) {
+    const label = document.createElement('label')
+    const name = document.createElement('span')
+    name.textContent = `${t(field.label)} (${t(field.unit)})`
+    const input = document.createElement('input')
+    input.inputMode = 'decimal'
+    input.value = recordsState[field.id]
+    input.addEventListener('change', () => {
+      const match = String(input.value).replace(',', '.').match(/\d{0,4}(?:\.\d)?/)
+      recordsState[field.id] = match ? match[0].replace(/\.$/, '') : ''
+      input.value = recordsState[field.id]
+      saveRecords()
+    })
+    label.append(name, input)
+    manualGrid.append(label)
+  }
+  manual.append(manualTitle, manualHint, manualGrid)
+
   const achievements = Object.entries(choices)
     .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
     .filter((entry) => needsGym(entry.choice) && entry.gymNote)
@@ -481,14 +602,14 @@ function renderStats() {
 
   const distanceChart = barChart(t('statsDistance'), distanceBars, t('statsEmptyDistance'))
   if (distanceBars.length) {
-    const total = distanceBars.reduce((sum, item) => sum + item.value, 0)
-    const average = Math.round((total / distanceBars.length) * 10) / 10
+    const summed = distanceBars.reduce((sum, item) => sum + item.value, 0)
+    const average = Math.round((summed / distanceBars.length) * 10) / 10
     const line = document.createElement('p')
     line.className = 'stat-line'
     line.textContent = `${t('average')}: ${Number.isInteger(average) ? average : average.toFixed(1)} km`
     distanceChart.append(line)
   }
-  statsBody.replaceChildren(distanceChart, barChart(t('paceTitle'), paceBars, t('statsEmptyPace')))
+  statsBody.replaceChildren(auto, manual, distanceChart, barChart(t('paceTitle'), paceBars, t('statsEmptyPace')))
 
   const gymBlock = document.createElement('section')
   gymBlock.className = 'stat-block'
@@ -969,6 +1090,275 @@ goal.addEventListener('input', () => {
   pushDiary()
 })
 
+const GOALS_STATE_KEY = 'treeningpaevik-eesmargid'
+
+function emptyGoals() {
+  return {
+    v: 1,
+    sleepOn: false,
+    sleepHours: 8,
+    caloriesOn: false,
+    runOn: false,
+    gymOn: false,
+    gymEvery: 2,
+    waterOn: false,
+    waterGlasses: 8,
+    log: {},
+  }
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return fallback
+  return Math.min(max, Math.max(min, number))
+}
+
+function loadGoalsFrom(saved) {
+  const next = emptyGoals()
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return next
+  next.sleepOn = Boolean(saved.sleepOn)
+  next.sleepHours = clampNumber(saved.sleepHours, 4, 12, 8)
+  next.caloriesOn = Boolean(saved.caloriesOn)
+  next.runOn = Boolean(saved.runOn)
+  next.gymOn = Boolean(saved.gymOn)
+  next.gymEvery = clampNumber(saved.gymEvery, 1, 4, 2)
+  next.waterOn = Boolean(saved.waterOn)
+  next.waterGlasses = clampNumber(saved.waterGlasses, 1, 20, 8)
+  next.log = saved.log && typeof saved.log === 'object' && !Array.isArray(saved.log) ? saved.log : {}
+  return next
+}
+
+let goalsState = loadGoalsFrom(loadJson(GOALS_STATE_KEY))
+
+function saveGoals() {
+  localStorage.setItem(GOALS_STATE_KEY, JSON.stringify(goalsState))
+  pushDiary()
+}
+
+function todayKey() {
+  return stampFromDate(new Date())
+}
+
+function readGoalLog(key) {
+  const entry = goalsState.log[key]
+  return entry && typeof entry === 'object' ? entry : {}
+}
+
+function recentKeys(count) {
+  const today = todayKey()
+  const keys = []
+  for (let offset = count - 1; offset >= 0; offset -= 1) keys.push(shiftStamp(today, -offset))
+  return keys
+}
+
+function weekdayShort(key) {
+  const [year, month, day] = key.split('-').map(Number)
+  const names = {
+    et: ['P', 'E', 'T', 'K', 'N', 'R', 'L'],
+    en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    ru: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+  }
+  return (names[getLang()] || names.et)[new Date(year, month - 1, day).getDay()]
+}
+
+function eatenOn(key) {
+  const items = nutritionState.days?.[key]
+  if (!Array.isArray(items)) return 0
+  return items.reduce((sum, item) => sum + (Number(item.kcal) || 0), 0)
+}
+
+function dayDistance(from, to) {
+  const [year, month, day] = from.split('-').map(Number)
+  const [year2, month2, day2] = to.split('-').map(Number)
+  return Math.round((new Date(year2, month2 - 1, day2) - new Date(year, month - 1, day)) / 86400000)
+}
+
+function goalField(label, control) {
+  const wrap = document.createElement('label')
+  wrap.className = 'goal-field'
+  const span = document.createElement('span')
+  span.textContent = label
+  wrap.append(span, control)
+  return wrap
+}
+
+function weekDots(met) {
+  const row = document.createElement('div')
+  row.className = 'goal-week'
+  for (const key of recentKeys(7)) {
+    const dot = document.createElement('span')
+    dot.textContent = weekdayShort(key)
+    if (met(key)) dot.classList.add('is-met')
+    row.append(dot)
+  }
+  return row
+}
+
+function goalCard(title, flag, fill) {
+  const card = document.createElement('article')
+  card.className = 'goal-card'
+  const header = document.createElement('header')
+  const heading = document.createElement('h3')
+  heading.textContent = title
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'goal-switch'
+  const on = Boolean(goalsState[flag])
+  button.setAttribute('aria-pressed', String(on))
+  button.textContent = on ? t('goalOn') : t('goalOff')
+  button.addEventListener('click', () => {
+    goalsState[flag] = !on
+    saveGoals()
+    renderGoals()
+  })
+  header.append(heading, button)
+  card.append(header)
+  if (on) {
+    const body = document.createElement('div')
+    body.className = 'goal-body'
+    fill(body)
+    card.append(body)
+  }
+  return card
+}
+
+function renderGoals() {
+  const board = document.querySelector('#goal-board')
+  board.replaceChildren()
+  board.append(
+    goalCard(t('goalSleep'), 'sleepOn', (body) => {
+      const hours = document.createElement('input')
+      hours.type = 'number'
+      hours.min = '4'
+      hours.max = '12'
+      hours.step = '0.5'
+      hours.value = String(goalsState.sleepHours)
+      hours.addEventListener('change', () => {
+        goalsState.sleepHours = clampNumber(hours.value, 4, 12, goalsState.sleepHours)
+        saveGoals()
+        renderGoals()
+      })
+      const slept = document.createElement('input')
+      slept.type = 'number'
+      slept.min = '0'
+      slept.max = '16'
+      slept.step = '0.5'
+      slept.value = readGoalLog(todayKey()).sleep ?? ''
+      const mark = document.createElement('button')
+      mark.type = 'button'
+      mark.className = 'goal-mark'
+      mark.textContent = t('goalMark')
+      mark.addEventListener('click', () => {
+        if (slept.value === '') return
+        const key = todayKey()
+        goalsState.log[key] = { ...readGoalLog(key), sleep: clampNumber(slept.value, 0, 16, 0) }
+        saveGoals()
+        renderGoals()
+      })
+      const row = document.createElement('div')
+      row.className = 'goal-row'
+      row.append(goalField(t('goalSleepHours'), hours), goalField(t('goalSleepToday'), slept), mark)
+      const todaySleep = Number(readGoalLog(todayKey()).sleep)
+      const status = document.createElement('p')
+      status.className = 'goal-status'
+      status.textContent = Number.isFinite(todaySleep) && readGoalLog(todayKey()).sleep !== undefined
+        ? (todaySleep >= goalsState.sleepHours ? t('goalMet') : t('goalOpen'))
+        : t('goalOpen')
+      body.append(row, status, weekDots((key) => Number(readGoalLog(key).sleep) >= goalsState.sleepHours && readGoalLog(key).sleep !== undefined))
+    }),
+    goalCard(t('goalCalories'), 'caloriesOn', (body) => {
+      const target = Number(nutritionState.kcal) || 0
+      const eaten = eatenOn(todayKey())
+      const status = document.createElement('p')
+      status.className = 'goal-status'
+      if (!target) {
+        status.textContent = t('goalCaloriesNeed')
+        body.append(status)
+        return
+      }
+      status.textContent = `${eaten} / ${target} kcal. ${eaten >= target ? t('goalMet') : t('goalOpen')}`
+      const bar = document.createElement('div')
+      bar.className = 'goal-bar'
+      const fill = document.createElement('span')
+      fill.style.width = `${Math.min(100, Math.round((eaten / target) * 100))}%`
+      bar.append(fill)
+      body.append(status, bar)
+    }),
+    goalCard(t('goalRun'), 'runOn', (body) => {
+      const keys = recentKeys(7)
+      const met = keys.filter((key) => needsRun(choiceName(choices[key]))).length
+      const status = document.createElement('p')
+      status.className = 'goal-status'
+      status.textContent = `${met}/7. ${needsRun(choiceName(choices[todayKey()])) ? t('goalMet') : t('goalOpen')}`
+      body.append(status, weekDots((key) => needsRun(choiceName(choices[key]))))
+    }),
+    goalCard(t('goalGym'), 'gymOn', (body) => {
+      const select = document.createElement('select')
+      for (const days of [1, 2, 3, 4]) {
+        const option = document.createElement('option')
+        option.value = String(days)
+        option.textContent = String(days)
+        if (days === goalsState.gymEvery) option.selected = true
+        select.append(option)
+      }
+      select.addEventListener('change', () => {
+        goalsState.gymEvery = clampNumber(select.value, 1, 4, 2)
+        saveGoals()
+        renderGoals()
+      })
+      const last = Object.keys(choices).filter((key) => key <= todayKey() && needsGym(choiceName(choices[key]))).sort().at(-1) || ''
+      const status = document.createElement('p')
+      status.className = 'goal-status'
+      if (!last) status.textContent = t('goalGymNone')
+      else {
+        const gap = dayDistance(last, todayKey())
+        status.textContent = `${t('goalLast')} ${dateLabel(last)}. ${gap <= goalsState.gymEvery ? t('goalGymOk') : t('goalGymDue')}`
+      }
+      body.append(goalField(t('goalGymEvery'), select), status, weekDots((key) => needsGym(choiceName(choices[key]))))
+    }),
+    goalCard(t('goalWater'), 'waterOn', (body) => {
+      const glasses = document.createElement('input')
+      glasses.type = 'number'
+      glasses.min = '1'
+      glasses.max = '20'
+      glasses.step = '1'
+      glasses.value = String(goalsState.waterGlasses)
+      glasses.addEventListener('change', () => {
+        goalsState.waterGlasses = clampNumber(glasses.value, 1, 20, goalsState.waterGlasses)
+        saveGoals()
+        renderGoals()
+      })
+      const drunk = document.createElement('input')
+      drunk.type = 'number'
+      drunk.min = '0'
+      drunk.max = '30'
+      drunk.step = '1'
+      drunk.value = readGoalLog(todayKey()).water ?? ''
+      const mark = document.createElement('button')
+      mark.type = 'button'
+      mark.className = 'goal-mark'
+      mark.textContent = t('goalMark')
+      mark.addEventListener('click', () => {
+        if (drunk.value === '') return
+        const key = todayKey()
+        goalsState.log[key] = { ...readGoalLog(key), water: clampNumber(drunk.value, 0, 30, 0) }
+        saveGoals()
+        renderGoals()
+      })
+      const row = document.createElement('div')
+      row.className = 'goal-row'
+      row.append(goalField(t('goalGlasses'), glasses), goalField(t('goalTodayGlasses'), drunk), mark)
+      const todayWater = Number(readGoalLog(todayKey()).water)
+      const status = document.createElement('p')
+      status.className = 'goal-status'
+      status.textContent = readGoalLog(todayKey()).water !== undefined
+        ? (todayWater >= goalsState.waterGlasses ? t('goalMet') : t('goalOpen'))
+        : t('goalOpen')
+      body.append(row, status, weekDots((key) => Number(readGoalLog(key).water) >= goalsState.waterGlasses && readGoalLog(key).water !== undefined))
+    }),
+  )
+}
+
 const NUTRITION_KEY = 'treeningpaevik-toitumine'
 const nutritionStart = document.querySelector('#nutrition-start')
 const nutritionForm = document.querySelector('#nutrition-form')
@@ -1210,6 +1600,8 @@ function collectDiary() {
     plan: planCellsData,
     nutrition: nutritionState,
     goal: goal.value,
+    goals: goalsState,
+    records: recordsState,
   }
 }
 
@@ -1238,6 +1630,15 @@ function applyDiary(data) {
   if (typeof data.goal === 'string') {
     localStorage.setItem(GOAL_KEY, data.goal)
     goal.value = data.goal
+  }
+  if (data.goals && typeof data.goals === 'object' && !Array.isArray(data.goals)) {
+    goalsState = loadGoalsFrom(data.goals)
+    localStorage.setItem(GOALS_STATE_KEY, JSON.stringify(goalsState))
+    renderGoals()
+  }
+  if (data.records && typeof data.records === 'object' && !Array.isArray(data.records)) {
+    recordsState = loadRecordsFrom(data.records)
+    localStorage.setItem(RECORDS_KEY, JSON.stringify(recordsState))
   }
   render()
 }
@@ -1291,6 +1692,8 @@ function emptyAccountDiary() {
     plan: emptyPlan(),
     nutrition: '',
     goal: '',
+    goals: emptyGoals(),
+    records: emptyRecords(),
   }
 }
 
@@ -1441,6 +1844,7 @@ function refreshLanguage() {
     if (details.choice) daySummary.textContent = daySummaryText(details)
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
+  if (!document.querySelector('[data-section="goals"]').hidden) renderGoals()
   if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
   if (!muscle3d) paintMuscleFilters()
   renderNutrition()

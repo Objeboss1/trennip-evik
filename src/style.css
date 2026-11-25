@@ -1711,6 +1711,168 @@ body.moving-spots .spot {
   gap: 1rem;
 }
 
+.record-head h3,
+.goal-card h3,
+.record-card h3,
+.record-manual h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.record-head p,
+.goal-hint,
+.record-card small,
+.record-manual p,
+.goal-status {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.goal-hint {
+  margin-bottom: 0.8rem;
+}
+
+.record-grid,
+.record-manual-grid,
+.goal-board {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.record-grid,
+.record-manual-grid {
+  grid-template-columns: repeat(auto-fill, minmax(10.2rem, 1fr));
+  margin-top: 0.7rem;
+}
+
+.record-card,
+.record-manual,
+.record-head,
+.goal-card {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--card);
+}
+
+.record-value {
+  margin: 0.3rem 0 0;
+  color: var(--ink);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.record-value.is-empty {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.record-manual label,
+.goal-field {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.record-manual-grid input,
+.goal-field input,
+.goal-field select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 0.6rem 0.7rem;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 12%, #0c1016);
+  font: inherit;
+}
+
+.goal-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.goal-switch,
+.goal-mark {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  color: var(--ink);
+  background: var(--card-2);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.goal-switch[aria-pressed='true'],
+.goal-mark {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.goal-body {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.goal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.goal-row .goal-field {
+  flex: 1;
+  min-width: 7rem;
+}
+
+.goal-week {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.goal-week span {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.goal-week span.is-met {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.goal-bar {
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, #10141b);
+}
+
+.goal-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
 .stat-block {
   padding: 0.9rem;
   border-radius: 1.1rem;
