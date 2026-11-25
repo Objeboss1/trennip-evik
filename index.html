@@ -5,100 +5,151 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trennipäevik</title>
+    <script>
+      const savedTheme = localStorage.getItem('treeningpaevik-teema')
+      if (savedTheme) document.documentElement.dataset.theme = savedTheme
+    </script>
   </head>
   <body>
     <div class="account-corner">
       <div class="account-actions">
-        <button type="button" id="settings-open">Sätted</button>
+        <button type="button" id="settings-open" data-i18n="settings">Sätted</button>
         <button type="button" id="account-open">Logi sisse</button>
       </div>
       <div id="account-panel" class="account-panel" hidden>
         <p id="account-error" class="account-error" hidden></p>
         <form id="account-login">
           <label>
-            E-post
+            <span data-i18n="email">E-post</span>
             <input id="login-email" type="email" autocomplete="username" required />
           </label>
           <label>
-            Parool
+            <span data-i18n="password">Parool</span>
             <input id="login-password" type="password" autocomplete="current-password" required />
           </label>
-          <button type="submit">Logi sisse</button>
-          <button type="button" id="show-register">Registreeru</button>
+          <button type="submit" data-i18n="login">Logi sisse</button>
+          <button type="button" id="show-register" data-i18n="register">Registreeru</button>
         </form>
         <form id="account-register" hidden>
           <label>
-            E-post
+            <span data-i18n="email">E-post</span>
             <input id="register-email" type="email" autocomplete="username" required />
           </label>
           <label>
-            Parool
+            <span data-i18n="password">Parool</span>
             <input id="register-password" type="password" autocomplete="new-password" minlength="8" required />
           </label>
-          <p class="account-hint">Vähemalt 8 märki.</p>
-          <button type="submit">Loo konto</button>
-          <button type="button" id="show-login">Tagasi</button>
+          <p class="account-hint" data-i18n="passwordHint">Vähemalt 8 märki.</p>
+          <button type="submit" data-i18n="createAccount">Loo konto</button>
+          <button type="button" id="show-login" data-i18n="back">Tagasi</button>
         </form>
         <div id="account-info" hidden>
-          <p>E-post</p>
+          <p data-i18n="gmail">Gmail</p>
           <p id="account-email" class="account-value"></p>
-          <p>Liitusid</p>
+          <p data-i18n="joined">Liitusid</p>
           <p id="account-joined" class="account-value"></p>
-          <button type="button" id="account-logout">Logi välja</button>
+          <button type="button" id="account-logout" data-i18n="logout">Logi välja</button>
         </div>
       </div>
     </div>
     <section id="info-page" class="info-page" hidden aria-labelledby="info-title">
-      <button type="button" class="info-close" id="info-close">Sulge</button>
+      <button type="button" class="info-close" id="info-close" data-i18n="close">Sulge</button>
       <div class="info-card">
         <h2 id="info-title">Sätted</h2>
-        <h3>Värvid</h3>
-        <ul>
-          <li>Roheline päev tähendab, et käisid jooksmas, jõusaalis või mõlemas.</li>
-          <li>Punane päev tähendab, et ei käinud.</li>
-          <li>Oranž rõngas on tänane päev.</li>
-          <li>Tuhm päev on üleeilsest vanem ja seda ei saa enam muuta.</li>
-        </ul>
-        <h3>Andmed</h3>
-        <p>Igal kontol on oma päevik. Ilma kontota jääb päevik sellesse brauserisse. Logi sisse on sätete kõrval. Kui oled sees, on sama nupu nimi Konto.</p>
-        <h3>Kuidas kasutada</h3>
-        <p>Üleval on nupud: Kalender, Treeningkava, Lihased, Toitumine, Eesmärgid ja Rekordid. Iga nupp avab oma osa.</p>
-        <p>Kalendris vajuta päevale. Tühi päev küsib kohe, mida tegid. Täidetud päev näitab kokkuvõtet ja nuppu Muuda. Täna saab muuta tänast ja eilset. Kuu vahetamiseks on nooled kuu nime kõrval.</p>
-        <p>Jooksmine ja Mõlemad küsivad tempo 1 km kohta ning pikkuse 1 kuni 21 km. Jõusaal ja Mõlemad küsivad, mida saavutasid. Valmis salvestab päeva.</p>
-        <p>Treeningkavas vajuta Muuda, siis saab lahtritesse kirjutada ning ridu ja veerge lisada või ära võtta. Kui veerge on rohkem kui kolm, saab kava külje peale lohistada.</p>
-        <p>Lihaste ringile vajutades saad kirjutada harjutused ja mitu korda teed. Uue ringi jaoks vajuta Muuda, vali pilt ja siis Lisa ring.</p>
-        <p>Toitumisse kirjuta, mida sööd. Eesmärkidesse kirjuta, mida tahad saavutada ja mis ajaga. Rekordites on jooksud, keskmine kilomeetrite arv, tempo ja jõusaali saavutused.</p>
+        <div id="settings-menu" class="settings-menu">
+          <button type="button" data-settings="account" data-i18n="account">Konto</button>
+          <button type="button" data-settings="language" data-i18n="language">Keel</button>
+          <button type="button" data-settings="theme" data-i18n="theme">Teema</button>
+          <button type="button" data-settings="info" data-i18n="info">Info</button>
+        </div>
+        <div id="settings-account" data-settings-panel="account" hidden>
+          <button type="button" class="settings-back" data-settings-back data-i18n="back">Tagasi</button>
+          <div id="profile-login">
+            <p data-i18n="loginFirst">Logi sisse, et näha ja täita oma profiili.</p>
+            <button type="button" id="profile-open-login" data-i18n="login">Logi sisse</button>
+          </div>
+          <form id="profile-form" hidden>
+            <label class="avatar">
+              <span class="avatar-fallback" id="profile-initial">?</span>
+              <img id="profile-photo" alt="" hidden />
+              <input id="profile-file" type="file" accept="image/*" />
+              <span data-i18n="photo">Profiilipilt</span>
+            </label>
+            <label>
+              <span data-i18n="name">Nimi</span>
+              <input id="profile-name" type="text" maxlength="80" autocomplete="name" />
+            </label>
+            <label>
+              <span data-i18n="gmail">Gmail</span>
+              <input id="profile-email" type="email" readonly />
+            </label>
+            <label>
+              <span data-i18n="age">Vanus</span>
+              <input id="profile-age" type="number" min="1" max="120" inputmode="numeric" />
+            </label>
+            <p class="profile-joined"><span data-i18n="joined">Liitusid</span> <span id="profile-joined"></span></p>
+          </form>
+        </div>
+        <div id="settings-language" data-settings-panel="language" hidden>
+          <button type="button" class="settings-back" data-settings-back data-i18n="back">Tagasi</button>
+          <div class="choice-list">
+            <button type="button" data-lang="et">Eesti keel</button>
+            <button type="button" data-lang="en">English</button>
+            <button type="button" data-lang="ru">Русский</button>
+          </div>
+        </div>
+        <div id="settings-theme" data-settings-panel="theme" hidden>
+          <button type="button" class="settings-back" data-settings-back data-i18n="back">Tagasi</button>
+          <div class="theme-grid">
+            <button type="button" data-theme-choice="lime"><span class="swatch" style="background: #d6ff4a"></span><span data-i18n="themeLime">Roheline</span></button>
+            <button type="button" data-theme-choice="orange"><span class="swatch" style="background: #ff7a1a"></span><span data-i18n="themeOrange">Oranž</span></button>
+            <button type="button" data-theme-choice="purple"><span class="swatch" style="background: #b07cff"></span><span data-i18n="themePurple">Lilla</span></button>
+            <button type="button" data-theme-choice="yellow"><span class="swatch" style="background: #ffe14a"></span><span data-i18n="themeYellow">Kollane</span></button>
+            <button type="button" data-theme-choice="cyan"><span class="swatch" style="background: #3ee0c5"></span><span data-i18n="themeCyan">Türkiis</span></button>
+            <button type="button" data-theme-choice="red"><span class="swatch" style="background: #ff5a6a"></span><span data-i18n="themeRed">Punane</span></button>
+          </div>
+        </div>
+        <div id="settings-info" data-settings-panel="info" hidden>
+          <button type="button" class="settings-back" data-settings-back data-i18n="back">Tagasi</button>
+          <p data-i18n="infoLead"></p>
+          <p data-i18n="infoCalendar"></p>
+          <p data-i18n="infoTrain"></p>
+          <p data-i18n="infoPlan"></p>
+          <p data-i18n="infoMuscles"></p>
+          <p data-i18n="infoRest"></p>
+          <p data-i18n="infoColors"></p>
+        </div>
       </div>
     </section>
     <main>
       <header class="hero">
-        <h1>Trennipäevik</h1>
+        <h1 data-i18n="title">Trennipäevik</h1>
         <p id="now" class="now"></p>
       </header>
       <nav class="section-nav" aria-label="Lehe osad">
-        <button type="button" data-view="calendar" aria-pressed="true">Kalender</button>
-        <button type="button" data-view="plan">Treeningkava</button>
-        <button type="button" data-view="muscles">Lihased</button>
-        <button type="button" data-view="nutrition">Toitumine</button>
-        <button type="button" data-view="goals">Eesmärgid</button>
-        <button type="button" data-view="records">Rekordid</button>
+        <button type="button" data-view="calendar" data-i18n="calendar" aria-pressed="true">Kalender</button>
+        <button type="button" data-view="plan" data-i18n="plan">Treeningkava</button>
+        <button type="button" data-view="muscles" data-i18n="muscles">Lihased</button>
+        <button type="button" data-view="nutrition" data-i18n="nutrition">Toitumine</button>
+        <button type="button" data-view="goals" data-i18n="goals">Eesmärgid</button>
+        <button type="button" data-view="records" data-i18n="records">Rekordid</button>
       </nav>
       <section id="calendar" class="calendar panel" data-section="calendar" aria-labelledby="month-label">
         <div class="calendar-nav">
-          <button type="button" class="month-arrow" data-nav="prev" aria-label="Eelmine kuu">‹</button>
+          <button type="button" class="month-arrow" data-nav="prev" data-i18n-aria="prevMonth" aria-label="Eelmine kuu">‹</button>
           <h2 id="month-label"></h2>
-          <button type="button" class="month-arrow" data-nav="next" aria-label="Järgmine kuu">›</button>
+          <button type="button" class="month-arrow" data-nav="next" data-i18n-aria="nextMonth" aria-label="Järgmine kuu">›</button>
         </div>
         <table>
           <thead>
             <tr>
-              <th scope="col" title="Esmaspäev"><span class="day-name">Esmaspäev</span><span class="day-short">E</span></th>
-              <th scope="col" title="Teisipäev"><span class="day-name">Teisipäev</span><span class="day-short">T</span></th>
-              <th scope="col" title="Kolmapäev"><span class="day-name">Kolmapäev</span><span class="day-short">K</span></th>
-              <th scope="col" title="Neljapäev"><span class="day-name">Neljapäev</span><span class="day-short">N</span></th>
-              <th scope="col" title="Reede"><span class="day-name">Reede</span><span class="day-short">R</span></th>
-              <th scope="col" title="Laupäev"><span class="day-name">Laupäev</span><span class="day-short">L</span></th>
-              <th scope="col" title="Pühapäev"><span class="day-name">Pühapäev</span><span class="day-short">P</span></th>
+              <th scope="col"><span class="day-name" data-i18n="mon">Esmaspäev</span><span class="day-short">E</span></th>
+              <th scope="col"><span class="day-name" data-i18n="tue">Teisipäev</span><span class="day-short">T</span></th>
+              <th scope="col"><span class="day-name" data-i18n="wed">Kolmapäev</span><span class="day-short">K</span></th>
+              <th scope="col"><span class="day-name" data-i18n="thu">Neljapäev</span><span class="day-short">N</span></th>
+              <th scope="col"><span class="day-name" data-i18n="fri">Reede</span><span class="day-short">R</span></th>
+              <th scope="col"><span class="day-name" data-i18n="sat">Laupäev</span><span class="day-short">L</span></th>
+              <th scope="col"><span class="day-name" data-i18n="sun">Pühapäev</span><span class="day-short">P</span></th>
             </tr>
           </thead>
           <tbody id="days"></tbody>
@@ -107,8 +158,8 @@
       <section class="panel" data-section="plan" hidden>
       <div id="plan-panel" class="plan-panel">
         <div class="plan-tools">
-          <button type="button" id="plan-edit">Muuda</button>
-          <button type="button" id="plan-add-column" hidden>Lisa veerg</button>
+          <button type="button" id="plan-edit" data-i18n="edit">Muuda</button>
+          <button type="button" id="plan-add-column" data-i18n="addColumn" hidden>Lisa veerg</button>
         </div>
         <div id="plan-scroll" class="plan-scroll">
           <div id="plan-cells" class="plan-cells"></div>
@@ -117,7 +168,7 @@
       </div>
       </section>
       <section class="panel" data-section="muscles" hidden>
-      <h2 class="muscles-title">Lihased</h2>
+      <h2 class="muscles-title" data-i18n="muscles">Lihased</h2>
       <section class="body-views" aria-label="Keha">
         <figure>
           <div class="shot" data-view="eest">
@@ -132,7 +183,7 @@
             <button type="button" class="spot" data-spot="eest-lahend" style="top: 60%; left: 47%" data-muscle="Lähendajad" title="Lähendajad" aria-label="Lähendajad"></button>
             <button type="button" class="spot" data-spot="eest-saar" style="top: 78%; left: 38%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
           </div>
-          <figcaption>Eest</figcaption>
+          <figcaption data-i18n="front">Eest</figcaption>
         </figure>
         <figure>
           <div class="shot" data-view="tagant">
@@ -145,7 +196,7 @@
             <button type="button" class="spot" data-spot="tagant-reie" style="top: 60%; left: 40%" data-muscle="Reie tagakülg" title="Reie tagakülg" aria-label="Reie tagakülg"></button>
             <button type="button" class="spot" data-spot="tagant-saar" style="top: 78%; left: 40%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
           </div>
-          <figcaption>Tagant</figcaption>
+          <figcaption data-i18n="backView">Tagant</figcaption>
         </figure>
         <figure>
           <div class="shot" data-view="korvalt">
@@ -156,73 +207,73 @@
             <button type="button" class="spot" data-spot="korvalt-neli" style="top: 55%; left: 52%" data-muscle="Nelipealihas" title="Nelipealihas" aria-label="Nelipealihas"></button>
             <button type="button" class="spot" data-spot="korvalt-saar" style="top: 78%; left: 48%" data-muscle="Säär" title="Säär" aria-label="Säär"></button>
           </div>
-          <figcaption>Kõrvalt</figcaption>
+          <figcaption data-i18n="side">Kõrvalt</figcaption>
         </figure>
       </section>
       <div class="spot-edit">
-        <p class="spot-help">Ringi lisamiseks vajuta Muuda, vali pilt ja siis Lisa ring. Ringi saab lohistada. Lõpuks vajuta Salvesta.</p>
-        <button type="button" id="edit-spots">Muuda</button>
+        <p class="spot-help" data-i18n="spotHelp">Ringi lisamiseks vajuta Muuda, vali pilt ja siis Lisa ring. Ringi saab lohistada. Lõpuks vajuta Salvesta.</p>
+        <button type="button" id="edit-spots" data-i18n="edit">Muuda</button>
         <div id="spot-tools" class="spot-tools" hidden>
           <label>
-            Uus ring pildile
+            <span data-i18n="newSpot">Uus ring pildile</span>
             <select id="spot-view">
-              <option value="eest">Eest</option>
-              <option value="tagant">Tagant</option>
-              <option value="korvalt">Kõrvalt</option>
+              <option value="eest" data-i18n="front">Eest</option>
+              <option value="tagant" data-i18n="backView">Tagant</option>
+              <option value="korvalt" data-i18n="side">Kõrvalt</option>
             </select>
           </label>
-          <button type="button" id="add-spot">Lisa ring</button>
-          <button type="button" id="save-spots">Salvesta</button>
+          <button type="button" id="add-spot" data-i18n="addSpot">Lisa ring</button>
+          <button type="button" id="save-spots" data-i18n="save">Salvesta</button>
         </div>
       </div>
       </section>
       <section class="panel nutrition-panel" data-section="nutrition" hidden>
-        <h2 class="muscles-title">Toitumine</h2>
+        <h2 class="muscles-title" data-i18n="nutrition">Toitumine</h2>
         <textarea id="nutrition" class="nutrition" rows="10"></textarea>
       </section>
       <section class="panel" data-section="goals" hidden>
-        <h2 class="muscles-title">Eesmärgid</h2>
+        <h2 class="muscles-title" data-i18n="goals">Eesmärgid</h2>
         <label class="goal">
-          Mida tahan saavutada ja mis ajaga
+          <span data-i18n="goalLabel">Mida tahan saavutada ja mis ajaga</span>
           <textarea id="goal" class="nutrition goal-text" rows="8"></textarea>
         </label>
       </section>
       <div id="muscle" class="modal" hidden>
         <div class="modal-card muscle-view">
-          <button type="button" class="back" id="muscle-back">Sulge</button>
+          <button type="button" class="back" id="muscle-back" data-i18n="close">Sulge</button>
           <label>
-            Pealkiri
+            <span data-i18n="muscleTitle">Pealkiri</span>
             <input id="muscle-title" type="text" />
           </label>
-          <button type="button" id="delete-open-spot">Kustuta ring</button>
+          <button type="button" id="delete-open-spot" data-i18n="deleteSpot">Kustuta ring</button>
           <label>
-            Harjutused
-            <textarea id="muscle-exercises" rows="6" placeholder="Kirjuta, milliseid harjutusi teed"></textarea>
+            <span data-i18n="exercises">Harjutused</span>
+            <textarea id="muscle-exercises" rows="6" data-i18n-placeholder="exercisesHint" placeholder="Kirjuta, milliseid harjutusi teed"></textarea>
           </label>
           <label>
-            Mitu korda
-            <input id="muscle-reps" type="text" placeholder="Kirjuta, mitu korda" />
+            <span data-i18n="reps">Mitu korda</span>
+            <input id="muscle-reps" type="text" data-i18n-placeholder="repsHint" placeholder="Kirjuta, mitu korda" />
           </label>
         </div>
       </div>
       <section id="day" class="modal" hidden>
         <div class="modal-card day-view">
-          <button type="button" class="back" id="back">Sulge</button>
+          <button type="button" class="back" id="back" data-i18n="close">Sulge</button>
           <h2 id="day-label"></h2>
           <p id="day-summary" class="day-summary" hidden></p>
-          <button type="button" id="day-edit">Muuda</button>
+          <button type="button" id="day-edit" data-i18n="edit">Muuda</button>
           <div id="day-choices" class="choices" role="group" aria-label="Treening">
-            <button type="button" data-choice="Jooksmine">Jooksmine</button>
-            <button type="button" data-choice="Jõusaal">Jõusaal</button>
-            <button type="button" data-choice="Mõlemad">Mõlemad</button>
-            <button type="button" data-choice="Ei käinud">Ei käinud</button>
+            <button type="button" data-choice="Jooksmine" data-i18n="run">Jooksmine</button>
+            <button type="button" data-choice="Jõusaal" data-i18n="gym">Jõusaal</button>
+            <button type="button" data-choice="Mõlemad" data-i18n="both">Mõlemad</button>
+            <button type="button" data-choice="Ei käinud" data-i18n="missed">Ei käinud</button>
           </div>
           <div id="day-extra" class="day-extra" hidden>
             <div id="run-questions" class="follow-up" hidden>
               <label>
-                Tempo 1km kohta
+                <span data-i18n="pace">Tempo 1km kohta</span>
                 <select id="run-pace">
-                  <option value="">Vali</option>
+                  <option value="" data-i18n="choose">Vali</option>
                   <option>4:00</option>
                   <option>4:30</option>
                   <option>5:00</option>
@@ -238,26 +289,26 @@
                 </select>
               </label>
               <label>
-                Kui palju
+                <span data-i18n="distance">Kui palju</span>
                 <select id="run-amount">
-                  <option value="">Vali</option>
+                  <option value="" data-i18n="choose">Vali</option>
                 </select>
               </label>
             </div>
             <div id="gym-questions" class="follow-up" hidden>
               <label>
-                Mida saavutasid?
-                <input id="gym-note" type="text" placeholder="nt uus raskus" />
+                <span data-i18n="achieved">Mida saavutasid?</span>
+                <input id="gym-note" type="text" data-i18n-placeholder="achievedHint" placeholder="nt uus raskus" />
               </label>
             </div>
             <div class="day-extra-actions">
-              <button type="button" id="day-save">Valmis</button>
+              <button type="button" id="day-save" data-i18n="done">Valmis</button>
             </div>
           </div>
         </div>
       </section>
       <section class="panel" data-section="records" hidden>
-        <h2 class="muscles-title">Rekordid</h2>
+        <h2 class="muscles-title" data-i18n="records">Rekordid</h2>
         <div id="stats-body"></div>
       </section>
     </main>

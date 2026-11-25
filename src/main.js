@@ -1,30 +1,13 @@
 import './style.css'
 import sharedDiary from './shared-diary.json'
+import { applyLanguage, getLang, months, setLang, t, weekdays } from './i18n.js'
 
-const MONTHS = [
-  'jaanuar',
-  'veebruar',
-  'märts',
-  'aprill',
-  'mai',
-  'juuni',
-  'juuli',
-  'august',
-  'september',
-  'oktoober',
-  'november',
-  'detsember',
-]
-
-const WEEKDAYS = [
-  'pühapäev',
-  'esmaspäev',
-  'teisipäev',
-  'kolmapäev',
-  'neljapäev',
-  'reede',
-  'laupäev',
-]
+const CHOICE_KEYS = {
+  Jooksmine: 'run',
+  Jõusaal: 'gym',
+  Mõlemad: 'both',
+  'Ei käinud': 'missed',
+}
 
 const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
 const STORAGE_KEY = 'treeningpaevik'
@@ -63,13 +46,13 @@ function stampFromDate(date) {
 }
 
 function formatNow(date) {
-  const weekday = monthTitle(WEEKDAYS[date.getDay()])
+  const weekday = monthTitle(weekdays()[date.getDay()])
   const clock = date.toLocaleTimeString('et-EE', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
   })
-  return `${weekday}, ${date.getDate()}. ${MONTHS[date.getMonth()]} ${date.getFullYear()} ${clock}`
+  return `${weekday}, ${date.getDate()}. ${months()[date.getMonth()]} ${date.getFullYear()} ${clock}`
 }
 
 function shiftStamp(stamp, days) {
@@ -154,7 +137,7 @@ function lockedClass(key) {
 }
 
 function render() {
-  monthLabel.textContent = `${monthTitle(MONTHS[month])} ${year}`
+  monthLabel.textContent = `${monthTitle(months()[month])} ${year}`
 
   const leading = (new Date(year, month, 1).getDay() + 6) % 7
   const count = new Date(year, month + 1, 0).getDate()
@@ -203,9 +186,9 @@ function showCalendar() {
 
 function daySummaryText(details) {
   if (!details.choice) return ''
-  const parts = [details.choice]
+  const parts = [CHOICE_KEYS[details.choice] ? t(CHOICE_KEYS[details.choice]) : details.choice]
   if (details.amount) parts.push(details.amount)
-  if (details.pace) parts.push(`tempo ${details.pace}`)
+  if (details.pace) parts.push(`${t('paceWord')} ${details.pace}`)
   if (details.gymNote) parts.push(details.gymNote)
   return parts.join(' · ')
 }
@@ -216,8 +199,8 @@ function showDay(key) {
   if (isLocked(key)) return
   openKey = key
   const [dateYear, dateMonth, dateDay] = key.split('-').map(Number)
-  const weekday = WEEKDAYS[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
-  dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${MONTHS[dateMonth - 1]} ${dateYear}`
+  const weekday = weekdays()[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
+  dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${months()[dateMonth - 1]} ${dateYear}`
   dayView.hidden = false
   const details = choiceDetails(choices[key])
   if (!details.choice) {
@@ -412,7 +395,7 @@ document.querySelector('#day-save').addEventListener('click', saveFollowUp)
 
 function dateLabel(key) {
   const [, monthNumber, dayNumber] = key.split('-').map(Number)
-  return `${dayNumber}. ${MONTHS[monthNumber - 1]}`
+  return `${dayNumber}. ${months()[monthNumber - 1]}`
 }
 
 function paceSeconds(pace) {
@@ -484,26 +467,26 @@ function renderStats() {
       value: paceSeconds(entry.pace),
     }))
 
-  const distanceChart = barChart('Kui palju', distanceBars, 'Koguse andmeid veel ei ole.')
+  const distanceChart = barChart(t('statsDistance'), distanceBars, t('statsEmptyDistance'))
   if (distanceBars.length) {
     const total = distanceBars.reduce((sum, item) => sum + item.value, 0)
     const average = Math.round((total / distanceBars.length) * 10) / 10
     const line = document.createElement('p')
     line.className = 'stat-line'
-    line.textContent = `Keskmine: ${Number.isInteger(average) ? average : average.toFixed(1)} km`
+    line.textContent = `${t('average')}: ${Number.isInteger(average) ? average : average.toFixed(1)} km`
     distanceChart.append(line)
   }
-  statsBody.replaceChildren(distanceChart, barChart('Tempo 1km kohta', paceBars, 'Tempo andmeid veel ei ole.'))
+  statsBody.replaceChildren(distanceChart, barChart(t('paceTitle'), paceBars, t('statsEmptyPace')))
 
   const gymBlock = document.createElement('section')
   gymBlock.className = 'stat-block'
   const gymHeading = document.createElement('h3')
-  gymHeading.textContent = 'Jõusaalis saavutasin'
+  gymHeading.textContent = t('gymAchieved')
   gymBlock.append(gymHeading)
   if (!achievements.length) {
     const empty = document.createElement('p')
     empty.className = 'stat-line'
-    empty.textContent = 'Jõusaalis ei ole veel saavutusi.'
+    empty.textContent = t('gymEmpty')
     gymBlock.append(empty)
   } else {
     const list = document.createElement('ul')
@@ -784,7 +767,7 @@ function renderPlan() {
       const removeColumn = document.createElement('button')
       removeColumn.type = 'button'
       removeColumn.className = 'plan-remove'
-      removeColumn.textContent = 'Eemalda veerg'
+      removeColumn.textContent = t('removeColumn')
       removeColumn.addEventListener('click', () => {
         planCellsData.splice(columnIndex, 1)
         savePlan()
@@ -835,7 +818,7 @@ function renderPlan() {
       const addRow = document.createElement('button')
       addRow.type = 'button'
       addRow.className = 'plan-add'
-      addRow.textContent = 'Lisa rida'
+      addRow.textContent = t('addRow')
       addRow.addEventListener('click', () => {
         planCellsData[columnIndex].rows.push({ text: '', reps: '' })
         savePlan()
@@ -850,7 +833,7 @@ function renderPlan() {
 
 function setPlanEditing(editing) {
   planEditing = editing
-  planEdit.textContent = editing ? 'Valmis' : 'Muuda'
+  planEdit.textContent = editing ? t('done') : t('edit')
   planEdit.setAttribute('aria-pressed', String(editing))
   planAddColumn.hidden = !editing
   if (!planPanel.hidden) renderPlan()
@@ -946,7 +929,8 @@ function accountEmail(value) {
 }
 
 function joinedLabel(iso) {
-  return new Date(iso).toLocaleDateString('et-EE', { timeZone: 'Europe/Tallinn' })
+  const locale = getLang() === 'ru' ? 'ru-RU' : getLang() === 'en' ? 'en-GB' : 'et-EE'
+  return new Date(iso).toLocaleDateString(locale, { timeZone: 'Europe/Tallinn' })
 }
 
 async function passwordHash(email, password) {
@@ -1000,11 +984,187 @@ const accountOpen = document.querySelector('#account-open')
 const accountPanel = document.querySelector('#account-panel')
 const infoPage = document.querySelector('#info-page')
 
+const THEME_KEY = 'treeningpaevik-teema'
+const LANG_KEY = 'treeningpaevik-keel'
+
+function showSettings(name) {
+  document.querySelector('#settings-menu').hidden = name !== 'menu'
+  for (const panel of document.querySelectorAll('[data-settings-panel]')) {
+    panel.hidden = panel.dataset.settingsPanel !== name
+  }
+  document.querySelector('#info-title').textContent = t(name === 'menu' ? 'settings' : name)
+  if (name === 'account') showProfile()
+}
+
+function markLanguage() {
+  const current = localStorage.getItem(LANG_KEY) || 'et'
+  for (const button of document.querySelectorAll('[data-lang]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.lang === current))
+  }
+}
+
+function applyTheme(name) {
+  const theme = ['lime', 'orange', 'purple', 'yellow', 'cyan', 'red'].includes(name) ? name : 'lime'
+  document.documentElement.dataset.theme = theme
+  localStorage.setItem(THEME_KEY, theme)
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme))
+  }
+}
+
+function accountRecord() {
+  if (!account?.email) return null
+  return loadAccounts()[account.email] || null
+}
+
+function saveProfile(patch) {
+  if (!account?.email) return
+  const accounts = loadAccounts()
+  if (!accounts[account.email]) return
+  Object.assign(accounts[account.email], patch)
+  saveAccounts(accounts)
+  if (patch.photo !== undefined) showProfile()
+  else if (!accounts[account.email].photo && patch.nimi !== undefined) {
+    document.querySelector('#profile-initial').textContent = (patch.nimi || account.email).slice(0, 1).toUpperCase() || '?'
+  }
+}
+
+function showProfile() {
+  const record = accountRecord()
+  document.querySelector('#profile-form').hidden = !record
+  document.querySelector('#profile-login').hidden = Boolean(record)
+  if (!record) return
+  document.querySelector('#profile-name').value = record.nimi || ''
+  document.querySelector('#profile-email').value = account.email
+  document.querySelector('#profile-age').value = record.vanus || ''
+  document.querySelector('#profile-joined').textContent = joinedLabel(record.liitus)
+  const photo = document.querySelector('#profile-photo')
+  const initial = document.querySelector('#profile-initial')
+  if (record.photo) {
+    photo.src = record.photo
+    photo.hidden = false
+    initial.hidden = true
+  } else {
+    photo.removeAttribute('src')
+    photo.hidden = true
+    initial.hidden = false
+    initial.textContent = (record.nimi || account.email).slice(0, 1).toUpperCase()
+  }
+}
+
+function readPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    const url = URL.createObjectURL(file)
+    image.onload = () => {
+      const size = 256
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const scale = Math.max(size / image.width, size / image.height)
+      const width = image.width * scale
+      const height = image.height * scale
+      canvas.getContext('2d').drawImage(image, (size - width) / 2, (size - height) / 2, width, height)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/jpeg', 0.82))
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('photo'))
+    }
+    image.src = url
+  })
+}
+
+function applyShortDays() {
+  const letters = {
+    et: ['E', 'T', 'K', 'N', 'R', 'L', 'P'],
+    en: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+    ru: ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'],
+  }
+  const list = letters[getLang()] || letters.et
+  document.querySelectorAll('.day-short').forEach((node, index) => {
+    node.textContent = list[index] || ''
+  })
+}
+
+function refreshLanguage() {
+  applyLanguage()
+  applyShortDays()
+  render()
+  nowLabel.textContent = formatNow(new Date())
+  if (openKey && !dayView.hidden) {
+    const [dateYear, dateMonth, dateDay] = openKey.split('-').map(Number)
+    const weekday = weekdays()[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
+    dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${months()[dateMonth - 1]} ${dateYear}`
+    const details = choiceDetails(choices[openKey])
+    if (details.choice) daySummary.textContent = daySummaryText(details)
+  }
+  if (!document.querySelector('[data-section="records"]').hidden) renderStats()
+  if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
+  planEdit.textContent = planEditing ? t('done') : t('edit')
+  renderAccount()
+  markLanguage()
+  if (!infoPage.hidden) {
+    const openPanel = [...document.querySelectorAll('[data-settings-panel]')].find((panel) => !panel.hidden)
+    showSettings(openPanel ? openPanel.dataset.settingsPanel : 'menu')
+  }
+}
+
 document.querySelector('#settings-open').addEventListener('click', () => {
   accountPanel.hidden = true
   infoPage.hidden = false
+  showSettings('menu')
   document.querySelector('#info-close').focus()
 })
+
+document.querySelector('#info-page').addEventListener('click', (event) => {
+  const choice = event.target.closest('[data-settings]')
+  if (choice) {
+    showSettings(choice.dataset.settings)
+    return
+  }
+  if (event.target.closest('[data-settings-back]')) showSettings('menu')
+})
+
+document.querySelector('#profile-open-login').addEventListener('click', () => {
+  infoPage.hidden = true
+  accountPanel.hidden = false
+  renderAccount()
+})
+
+document.querySelector('#profile-form').addEventListener('submit', (event) => event.preventDefault())
+
+document.querySelector('#profile-name').addEventListener('input', (event) => {
+  saveProfile({ nimi: event.target.value.trim() })
+})
+
+document.querySelector('#profile-age').addEventListener('change', (event) => {
+  const age = Number(event.target.value)
+  saveProfile({ vanus: age >= 1 && age <= 120 ? String(age) : '' })
+})
+
+document.querySelector('#profile-file').addEventListener('change', async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  try {
+    saveProfile({ photo: await readPhoto(file) })
+  } catch {
+    saveProfile({ photo: '' })
+  }
+})
+
+for (const button of document.querySelectorAll('[data-lang]')) {
+  button.addEventListener('click', () => {
+    setLang(button.dataset.lang)
+    localStorage.setItem(LANG_KEY, button.dataset.lang)
+    refreshLanguage()
+  })
+}
+
+for (const button of document.querySelectorAll('[data-theme-choice]')) {
+  button.addEventListener('click', () => applyTheme(button.dataset.themeChoice))
+}
 
 document.querySelector('.section-nav').addEventListener('click', (event) => {
   const button = event.target.closest('[data-view]')
@@ -1031,12 +1191,14 @@ function showAccountError(message) {
 
 function renderAccount() {
   const signedIn = Boolean(account?.email)
-  accountOpen.textContent = signedIn ? 'Konto' : 'Logi sisse'
+  accountOpen.textContent = signedIn ? t('account') : t('login')
   loginForm.hidden = signedIn
   registerForm.hidden = true
   accountInfo.hidden = !signedIn
   if (signedIn) {
     document.querySelector('#account-email').textContent = account.email
+    const record = loadAccounts()[account.email]
+    if (record?.liitus) account.liitus = joinedLabel(record.liitus)
     document.querySelector('#account-joined').textContent = account.liitus
   }
 }
@@ -1063,17 +1225,17 @@ async function enterAccount(emailValue, password, register) {
   showAccountError('')
   flushDiary()
   const email = accountEmail(emailValue)
-  if (!email.includes('@')) throw new Error('E-post ei kõlba.')
-  if (password.length < 8) throw new Error('Parool peab olema vähemalt 8 märki.')
+  if (!email.includes('@')) throw new Error(t('badEmail'))
+  if (password.length < 8) throw new Error(t('shortPassword'))
   const accounts = loadAccounts()
   const hash = await passwordHash(email, password)
   if (register) {
-    if (accounts[email]) throw new Error('See e-post on juba kasutusel.')
+    if (accounts[email]) throw new Error(t('emailUsed'))
     const diary = email === FIRST_EMAIL ? structuredClone(collectDiary()) : emptyAccountDiary()
     accounts[email] = { passwordHash: hash, liitus: new Date().toISOString(), diary }
     saveAccounts(accounts)
   } else if (!accounts[email] || accounts[email].passwordHash !== hash) {
-    throw new Error('Vale e-post või parool.')
+    throw new Error(t('badLogin'))
   }
   localStorage.setItem(SESSION_KEY, email)
   account = { email, liitus: joinedLabel(accounts[email].liitus) }
@@ -1102,6 +1264,12 @@ document.querySelector('#account-logout').addEventListener('click', () => {
   localStorage.removeItem(SESSION_KEY)
   location.reload()
 })
+
+setLang(localStorage.getItem(LANG_KEY) || 'et')
+applyLanguage()
+applyShortDays()
+applyTheme(localStorage.getItem(THEME_KEY) || 'lime')
+markLanguage()
 
 todayStamp = stampFromDate(new Date())
 const savedAccounts = loadAccounts()
