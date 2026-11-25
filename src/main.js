@@ -5,14 +5,6 @@ import { EXERCISES, EXERCISE_GROUPS, exerciseById, findExercise } from './exerci
 import { MUSCLE_GROUPS } from './muscle-data.js'
 import { FOODS, foodById } from './foods.js'
 
-const CHOICE_KEYS = {
-  Jooksmine: 'run',
-  Jõusaal: 'gym',
-  Mõlemad: 'both',
-  'Ei käinud': 'missed',
-}
-
-const WENT = new Set(['Jooksmine', 'Jõusaal', 'Mõlemad'])
 const STORAGE_KEY = 'treeningpaevik'
 
 const monthLabel = document.querySelector('#month-label')
@@ -69,12 +61,12 @@ function helloName() {
 function streakCount() {
   if (!todayStamp) return 0
   let cursor = todayStamp
-  if (!WENT.has(choiceName(choices[cursor]))) {
-    if (choiceName(choices[cursor])) return 0
+  if (!hasActivity(choices[cursor])) {
+    if (choices[cursor]) return 0
     cursor = shiftStamp(cursor, -1)
   }
   let count = 0
-  while (WENT.has(choiceName(choices[cursor]))) {
+  while (hasActivity(choices[cursor])) {
     count += 1
     cursor = shiftStamp(cursor, -1)
     if (count > 4000) break
@@ -143,33 +135,40 @@ function choiceName(entry) {
   return entry.choice || ''
 }
 
-function choiceDetails(entry) {
-  const name = choiceName(entry)
-  if (!entry || typeof entry === 'string') {
-    return { choice: name, pace: '', amount: '', extra: '', gym: '', gymNote: '' }
-  }
+function activityFrom(item) {
   return {
-    choice: name,
-    pace: entry.pace || '',
-    amount: entry.amount || '',
-    extra: entry.extra || '',
-    gym: entry.gym || '',
-    gymNote: entry.gymNote || '',
+    type: item.type,
+    time: item.time || '',
+    pace: item.pace || '',
+    amount: item.amount || '',
+    note: item.note || '',
   }
 }
 
-function needsRun(name) {
-  return name === 'Jooksmine' || name === 'Mõlemad'
+function activitiesOf(entry) {
+  if (!entry) return []
+  if (Array.isArray(entry.activities)) {
+    return entry.activities.filter((item) => item && ['run', 'ride', 'weights'].includes(item.type)).map(activityFrom)
+  }
+  const name = choiceName(entry)
+  const pace = typeof entry === 'object' ? entry.pace || '' : ''
+  const amount = typeof entry === 'object' ? entry.amount || '' : ''
+  const note = typeof entry === 'object' ? entry.gymNote || '' : ''
+  const list = []
+  if (name === 'Jooksmine' || name === 'Mõlemad') list.push({ type: 'run', time: '', pace, amount, note: '' })
+  if (name === 'Jõusaal' || name === 'Mõlemad') list.push({ type: 'weights', time: '', pace: '', amount: '', note })
+  return list
 }
 
-function needsGym(name) {
-  return name === 'Jõusaal' || name === 'Mõlemad'
+function hasActivity(entry, type) {
+  const list = activitiesOf(entry)
+  if (!type) return list.length > 0
+  return list.some((item) => item.type === type)
 }
 
 function markClass(choice) {
-  const name = choiceName(choice)
-  if (WENT.has(name)) return ' day-went'
-  if (name === 'Ei käinud') return ' day-missed'
+  if (hasActivity(choice)) return ' day-went'
+  if (choiceName(choice) === 'Ei käinud') return ' day-missed'
   return ''
 }
 
@@ -226,16 +225,23 @@ function showCalendar() {
   showView('calendar')
 }
 
-function daySummaryText(details) {
-  if (!details.choice) return ''
-  const parts = [CHOICE_KEYS[details.choice] ? t(CHOICE_KEYS[details.choice]) : details.choice]
-  if (details.amount) parts.push(details.amount)
-  if (details.pace) parts.push(`${t('paceWord')} ${details.pace}`)
-  if (details.gymNote) parts.push(details.gymNote)
+function activityLabel(type) {
+  if (type === 'run') return t('run')
+  if (type === 'ride') return t('ride')
+  return t('weights')
+}
+
+function activityLine(item) {
+  const parts = [activityLabel(item.type)]
+  if (item.time) parts.push(item.time)
+  if (item.amount) parts.push(item.amount)
+  if (item.pace) parts.push(`${t('paceWord')} ${item.pace}`)
+  if (item.note) parts.push(item.note)
   return parts.join(' · ')
 }
 
-let dayEditing = false
+let dayMode = 'summary'
+let pendingType = ''
 
 function showDay(key) {
   if (isLocked(key)) return
@@ -244,39 +250,76 @@ function showDay(key) {
   const weekday = weekdays()[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
   dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${months()[dateMonth - 1]} ${dateYear}`
   dayView.hidden = false
-  const details = choiceDetails(choices[key])
-  if (!details.choice) {
-    beginDayEdit()
+  const list = activitiesOf(choices[key])
+  dayMode = list.length ? 'summary' : 'add'
+  pendingType = ''
+  paintDay()
+}
+
+function paintSummary(list) {
+  daySummary.replaceChildren()
+  const log = document.createElement('ul')
+  log.className = 'day-log'
+  for (const item of list) {
+    const row = document.createElement('li')
+    const text = document.createElement('span')
+    text.textContent = activityLine(item)
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.dataset.removeActivity = item.type
+    remove.textContent = t('removeActivity')
+    row.append(text, remove)
+    log.append(row)
+  }
+  daySummary.append(log)
+}
+
+function showActivityForms(types) {
+  const showRun = types.includes('run')
+  const showRide = types.includes('ride')
+  const showWeights = types.includes('weights')
+  runQuestions.hidden = !showRun
+  rideQuestions.hidden = !showRide
+  gymQuestions.hidden = !showWeights
+  dayExtra.hidden = !(showRun || showRide || showWeights)
+}
+
+function fillActivityForm(item) {
+  if (item.type === 'run') {
+    runTime.value = item.time || ''
+    selectValue(runPace, item.pace)
+    selectValue(runAmount, item.amount)
+  }
+  if (item.type === 'ride') {
+    rideTime.value = item.time || ''
+    rideAmount.value = amountNumber(item.amount) ? String(amountNumber(item.amount)) : ''
+  }
+  if (item.type === 'weights') {
+    weightsTime.value = item.time || ''
+    gymNote.value = item.note || ''
+  }
+}
+
+function paintDay() {
+  const list = activitiesOf(choices[openKey])
+  const used = new Set(list.map((item) => item.type))
+  daySummary.hidden = dayMode !== 'summary'
+  dayEdit.hidden = dayMode !== 'summary' || !list.length
+  dayAdd.hidden = dayMode !== 'summary' || used.size >= 3
+  dayTools.hidden = dayAdd.hidden && dayEdit.hidden
+  dayChoices.hidden = dayMode !== 'add'
+  for (const button of choiceButtons) {
+    button.hidden = dayMode === 'add' && used.has(button.dataset.choice)
+    button.setAttribute('aria-pressed', String(dayMode === 'add' && button.dataset.choice === pendingType))
+  }
+  if (dayMode === 'summary') {
+    dayExtra.hidden = true
+    paintSummary(list)
     return
   }
-  dayEditing = false
-  daySummary.hidden = false
-  daySummary.textContent = daySummaryText(details)
-  dayEdit.hidden = false
-  dayChoices.hidden = true
-  dayExtra.hidden = true
-}
-
-function refreshDayEditor() {
-  const name = choiceName(choices[openKey])
-  for (const button of choiceButtons) {
-    button.disabled = false
-    button.setAttribute('aria-pressed', String(button.dataset.choice === name))
-  }
-  fillFollowUp(name, choiceDetails(choices[openKey]))
-}
-
-function beginDayEdit() {
-  dayEditing = true
-  dayEdit.hidden = true
-  daySummary.hidden = true
-  const name = choiceName(choices[openKey])
-  for (const button of choiceButtons) {
-    button.disabled = false
-    button.setAttribute('aria-pressed', String(button.dataset.choice === name))
-  }
-  dayChoices.hidden = false
-  dayExtra.hidden = true
+  const types = dayMode === 'edit' ? list.map((item) => item.type) : pendingType ? [pendingType] : []
+  showActivityForms(types)
+  for (const type of types) fillActivityForm(list.find((item) => item.type === type) || { type })
 }
 
 const MUSCLE_KEY = 'treeningpaevik-lihased'
@@ -315,40 +358,51 @@ days.addEventListener('click', (event) => {
   showDay(button.dataset.date)
 })
 
-dayEdit.addEventListener('click', beginDayEdit)
+dayEdit.addEventListener('click', () => {
+  dayMode = 'edit'
+  pendingType = ''
+  paintDay()
+})
+
+daySummary.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-remove-activity]')
+  if (!button || !openKey) return
+  const next = activitiesOf(choices[openKey]).filter((item) => item.type !== button.dataset.removeActivity)
+  saveDayActivities(next)
+  showDay(openKey)
+})
 
 document.querySelector('#back').addEventListener('click', showCalendar)
 
 for (const button of choiceButtons) {
   button.addEventListener('click', () => {
-    if (!dayEditing || !openKey) return
-    const name = button.dataset.choice
-    const previous = choiceDetails(choices[openKey])
-    const keepRun = needsRun(name) && needsRun(previous.choice)
-    const keepGym = needsGym(name) && needsGym(previous.choice)
-    choices[openKey] = {
-      choice: name,
-      pace: keepRun ? previous.pace : '',
-      amount: keepRun ? previous.amount : '',
-      gym: keepGym ? previous.gym : '',
-      gymNote: keepGym ? previous.gymNote : '',
-    }
-    followStep = needsRun(name) ? 'run' : 'gym'
-    saveChoices(choices)
-    refreshDayEditor()
-    render()
+    if (dayMode !== 'add' || !openKey) return
+    pendingType = button.dataset.choice
+    paintDay()
   })
 }
 
 const dayExtra = document.querySelector('#day-extra')
 const runQuestions = document.querySelector('#run-questions')
+const rideQuestions = document.querySelector('#ride-questions')
 const gymQuestions = document.querySelector('#gym-questions')
 const runPace = document.querySelector('#run-pace')
 const runAmount = document.querySelector('#run-amount')
+const runTime = document.querySelector('#run-time')
+const rideAmount = document.querySelector('#ride-amount')
+const rideTime = document.querySelector('#ride-time')
+const weightsTime = document.querySelector('#weights-time')
 const gymNote = document.querySelector('#gym-note')
 const dayChoices = document.querySelector('#day-choices')
+const dayAdd = document.querySelector('#day-add')
+const dayTools = document.querySelector('#day-tools')
 const statsBody = document.querySelector('#stats-body')
-let followStep = 'run'
+
+dayAdd.addEventListener('click', () => {
+  dayMode = 'add'
+  pendingType = ''
+  paintDay()
+})
 
 for (let km = 1; km <= 21; km += 1) {
   const option = document.createElement('option')
@@ -367,40 +421,44 @@ function selectValue(select, value) {
   select.value = value || ''
 }
 
-function fillFollowUp(name, details) {
-  const both = needsRun(name) && needsGym(name)
-  const showRun = needsRun(name) && (!both || followStep !== 'gym')
-  const showGym = needsGym(name) && (!both || followStep === 'gym')
-  dayExtra.hidden = !(showRun || showGym)
-  dayChoices.hidden = showRun || showGym
-  runQuestions.hidden = !showRun
-  gymQuestions.hidden = !showGym
-  if (showRun) {
-    selectValue(runPace, details.pace)
-    selectValue(runAmount, details.amount)
+function readActivity(type) {
+  if (type === 'run') return { type, time: runTime.value, pace: runPace.value, amount: runAmount.value, note: '' }
+  if (type === 'ride') {
+    const km = amountNumber(rideAmount.value)
+    return { type, time: rideTime.value, pace: '', amount: km ? `${km} km` : '', note: '' }
   }
-  gymNote.value = showGym ? details.gymNote : ''
+  return { type, time: weightsTime.value, pace: '', amount: '', note: gymNote.value.trim() }
 }
 
-function saveFollowUp() {
-  const name = choiceName(choices[openKey])
-  if (!dayEditing || !openKey || !name) return
-  const both = needsRun(name) && needsGym(name)
-  const savingGym = needsGym(name) && (!both || followStep === 'gym')
-  const current = choiceDetails(choices[openKey])
-  choices[openKey] = {
-    choice: name,
-    pace: savingGym ? current.pace : runPace.value,
-    amount: savingGym ? current.amount : runAmount.value,
-    gymNote: savingGym ? gymNote.value.trim() : current.gymNote,
+function saveDayActivities(list) {
+  if (!list.length) delete choices[openKey]
+  else {
+    choices[openKey] = {
+      activities: list.map((item) => {
+        const next = { type: item.type }
+        if (item.time) next.time = item.time
+        if (item.pace) next.pace = item.pace
+        if (item.amount) next.amount = item.amount
+        if (item.note) next.note = item.note
+        return next
+      }),
+    }
   }
   saveChoices(choices)
   render()
-  if (both && followStep !== 'gym') {
-    followStep = 'gym'
-    fillFollowUp(name, choiceDetails(choices[openKey]))
-    return
+}
+
+function saveFollowUp() {
+  if (!openKey || (dayMode !== 'add' && dayMode !== 'edit')) return
+  const current = activitiesOf(choices[openKey])
+  let next = current
+  if (dayMode === 'add') {
+    if (!pendingType) return
+    next = current.filter((item) => item.type !== pendingType).concat(readActivity(pendingType))
+  } else {
+    next = current.map((item) => readActivity(item.type))
   }
+  saveDayActivities(next)
   showCalendar()
 }
 
@@ -482,11 +540,24 @@ function saveRecords() {
   pushDiary()
 }
 
-function runEntries() {
+function activityEntries(type) {
+  const today = stampFromDate(new Date())
   return Object.entries(choices)
-    .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
-    .filter((entry) => needsRun(entry.choice) && entry.key <= stampFromDate(new Date()))
+    .filter(([key]) => key <= today)
+    .map(([key, entry]) => {
+      const item = activitiesOf(entry).find((activity) => activity.type === type)
+      return item ? { key, ...item } : null
+    })
+    .filter(Boolean)
     .sort((a, b) => a.key.localeCompare(b.key))
+}
+
+function runEntries() {
+  return activityEntries('run')
+}
+
+function rideEntries() {
+  return activityEntries('ride')
 }
 
 function formatClock(seconds) {
@@ -531,11 +602,14 @@ function recordCard(title, value, detail) {
 
 function renderStats() {
   const runs = runEntries()
+  const rides = rideEntries()
   const fastestKm = bestPace(runs)
   const fastest5 = bestDistanceTime(runs, 5)
   const fastest10 = bestDistanceTime(runs, 10)
   const longest = runs.filter((entry) => amountNumber(entry.amount)).sort((a, b) => amountNumber(b.amount) - amountNumber(a.amount))[0]
   const total = Math.round(runs.reduce((sum, entry) => sum + amountNumber(entry.amount), 0) * 10) / 10
+  const longestRide = rides.filter((entry) => amountNumber(entry.amount)).sort((a, b) => amountNumber(b.amount) - amountNumber(a.amount))[0]
+  const rideTotal = Math.round(rides.reduce((sum, entry) => sum + amountNumber(entry.amount), 0) * 10) / 10
   const auto = document.createElement('section')
   auto.className = 'record-head'
   const autoTitle = document.createElement('h3')
@@ -550,6 +624,16 @@ function renderStats() {
     recordCard('record10k', fastest10 ? formatClock(fastest10.seconds) : '', fastest10 ? `${dateLabel(fastest10.key)}. ${t('recordFromPace')}` : t('recordNeed10')),
     recordCard('recordLong', longest ? `${amountNumber(longest.amount)} km` : '', longest ? dateLabel(longest.key) : t('recordNeedDistance')),
     recordCard('recordTotal', total ? `${Number.isInteger(total) ? total : total.toFixed(1)} km` : '', total ? '' : t('recordNeedDistance')),
+    recordCard(
+      'recordRideLong',
+      longestRide ? `${amountNumber(longestRide.amount)} km` : '',
+      longestRide ? dateLabel(longestRide.key) : t('recordNeedRide'),
+    ),
+    recordCard(
+      'recordRideTotal',
+      rideTotal ? `${Number.isInteger(rideTotal) ? rideTotal : rideTotal.toFixed(1)} km` : '',
+      rideTotal ? '' : t('recordNeedRide'),
+    ),
   )
   for (const card of grid.querySelectorAll('h3')) card.textContent = t(card.textContent)
   auto.append(autoTitle, autoHint, grid)
@@ -581,8 +665,11 @@ function renderStats() {
   manual.append(manualTitle, manualHint, manualGrid)
 
   const achievements = Object.entries(choices)
-    .map(([key, entry]) => ({ key, ...choiceDetails(entry) }))
-    .filter((entry) => needsGym(entry.choice) && entry.gymNote)
+    .map(([key, entry]) => {
+      const weights = activitiesOf(entry).find((item) => item.type === 'weights' && item.note)
+      return weights ? { key, gymNote: weights.note } : null
+    })
+    .filter(Boolean)
     .sort((a, b) => a.key.localeCompare(b.key))
 
   const distanceBars = runs
@@ -1286,11 +1373,11 @@ function renderGoals() {
     }),
     goalCard(t('goalRun'), 'runOn', (body) => {
       const keys = recentKeys(7)
-      const met = keys.filter((key) => needsRun(choiceName(choices[key]))).length
+      const met = keys.filter((key) => hasActivity(choices[key], 'run')).length
       const status = document.createElement('p')
       status.className = 'goal-status'
-      status.textContent = `${met}/7. ${needsRun(choiceName(choices[todayKey()])) ? t('goalMet') : t('goalOpen')}`
-      body.append(status, weekDots((key) => needsRun(choiceName(choices[key]))))
+      status.textContent = `${met}/7. ${hasActivity(choices[todayKey()], 'run') ? t('goalMet') : t('goalOpen')}`
+      body.append(status, weekDots((key) => hasActivity(choices[key], 'run')))
     }),
     goalCard(t('goalGym'), 'gymOn', (body) => {
       const select = document.createElement('select')
@@ -1306,7 +1393,7 @@ function renderGoals() {
         saveGoals()
         renderGoals()
       })
-      const last = Object.keys(choices).filter((key) => key <= todayKey() && needsGym(choiceName(choices[key]))).sort().at(-1) || ''
+      const last = Object.keys(choices).filter((key) => key <= todayKey() && hasActivity(choices[key], 'weights')).sort().at(-1) || ''
       const status = document.createElement('p')
       status.className = 'goal-status'
       if (!last) status.textContent = t('goalGymNone')
@@ -1314,7 +1401,7 @@ function renderGoals() {
         const gap = dayDistance(last, todayKey())
         status.textContent = `${t('goalLast')} ${dateLabel(last)}. ${gap <= goalsState.gymEvery ? t('goalGymOk') : t('goalGymDue')}`
       }
-      body.append(goalField(t('goalGymEvery'), select), status, weekDots((key) => needsGym(choiceName(choices[key]))))
+      body.append(goalField(t('goalGymEvery'), select), status, weekDots((key) => hasActivity(choices[key], 'weights')))
     }),
     goalCard(t('goalWater'), 'waterOn', (body) => {
       const glasses = document.createElement('input')
@@ -1840,8 +1927,7 @@ function refreshLanguage() {
     const [dateYear, dateMonth, dateDay] = openKey.split('-').map(Number)
     const weekday = weekdays()[new Date(dateYear, dateMonth - 1, dateDay).getDay()]
     dayLabel.textContent = `${monthTitle(weekday)}, ${dateDay}. ${months()[dateMonth - 1]} ${dateYear}`
-    const details = choiceDetails(choices[openKey])
-    if (details.choice) daySummary.textContent = daySummaryText(details)
+    paintDay()
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
   if (!document.querySelector('[data-section="goals"]').hidden) renderGoals()

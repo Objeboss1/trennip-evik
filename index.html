@@ -345,16 +345,31 @@
         <div class="modal-card day-view">
           <button type="button" class="back" id="back" data-i18n="close">Sulge</button>
           <h2 id="day-label"></h2>
-          <p id="day-summary" class="day-summary" hidden></p>
-          <button type="button" id="day-edit" data-i18n="edit">Muuda</button>
-          <div id="day-choices" class="choices" role="group" aria-label="Treening">
-            <button type="button" data-choice="Jooksmine" data-i18n="run">Jooksmine</button>
-            <button type="button" data-choice="Jõusaal" data-i18n="gym">Jõusaal</button>
-            <button type="button" data-choice="Mõlemad" data-i18n="both">Mõlemad</button>
-            <button type="button" data-choice="Ei käinud" data-i18n="missed">Ei käinud</button>
+          <div id="day-summary" class="day-summary" hidden></div>
+          <div id="day-tools" class="day-tools">
+            <button type="button" id="day-add" data-i18n="addActivity" hidden>Lisa uus tegevus</button>
+            <button type="button" id="day-edit" data-i18n="edit">Muuda</button>
+          </div>
+          <div id="day-choices" class="choices activity-choices" role="group" aria-label="Treening">
+            <button type="button" data-choice="run">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="14.2" cy="4.2" r="1.8" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.5 9.2l3.1 1.2 1.7 3.2-2 3.6M9.2 10.2l2.6-1.4 2.2 2.1-1.2 2.6 3.4 1.2M12.4 8.6l1.8 3.4 3.2-1.2M8.2 20.8l1.5-3.6 2.4.7-1.2 3.2"/></svg>
+              <span data-i18n="run">Jooksmine</span>
+            </button>
+            <button type="button" data-choice="ride">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.2" cy="16.2" r="2.7" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.8" cy="16.2" r="2.7" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.2 16.2L11 8.4h3.6l3.2 7.8M11 8.4L8.4 16.2M14.6 8.4l1.1-2.2H18.2"/></svg>
+              <span data-i18n="ride">Ratas</span>
+            </button>
+            <button type="button" data-choice="weights">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M7 9v6M4.5 10.2v3.6M9.2 7.4v9.2M17 9v6M19.5 10.2v3.6M14.8 7.4v9.2M9.2 12h5.6"/></svg>
+              <span data-i18n="weights">Jõutrenn</span>
+            </button>
           </div>
           <div id="day-extra" class="day-extra" hidden>
             <div id="run-questions" class="follow-up" hidden>
+              <label>
+                <span data-i18n="activityTime">Mis kell</span>
+                <input id="run-time" type="time" />
+              </label>
               <label>
                 <span data-i18n="pace">Tempo 1km kohta</span>
                 <select id="run-pace">
@@ -380,7 +395,21 @@
                 </select>
               </label>
             </div>
+            <div id="ride-questions" class="follow-up" hidden>
+              <label>
+                <span data-i18n="activityTime">Mis kell</span>
+                <input id="ride-time" type="time" />
+              </label>
+              <label>
+                <span data-i18n="rideDistance">Mitu kilomeetrit</span>
+                <input id="ride-amount" inputmode="decimal" placeholder="km" />
+              </label>
+            </div>
             <div id="gym-questions" class="follow-up" hidden>
+              <label>
+                <span data-i18n="activityTime">Mis kell</span>
+                <input id="weights-time" type="time" />
+              </label>
               <label>
                 <span data-i18n="achieved">Mida saavutasid?</span>
                 <input id="gym-note" type="text" data-i18n-placeholder="achievedHint" placeholder="nt uus raskus" />
