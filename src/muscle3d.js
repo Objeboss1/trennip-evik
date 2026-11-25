@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { getLang } from './i18n.js'
+import { findExercise } from './exercises.js'
 import { MUSCLE_GROUPS, muscleGroup } from './muscle-data.js'
 
 const VIEWS = {
@@ -15,59 +16,14 @@ function text(lang, value) {
   return value[lang] || value.et
 }
 
-function stamp(date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function readChoices() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem('treeningpaevik') || '{}')
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function readSavedMuscle(name) {
-  try {
-    const parsed = JSON.parse(localStorage.getItem('treeningpaevik-lihased') || '{}')
-    return parsed?.[name] || null
-  } catch {
-    return null
-  }
-}
-
-function recentDays(group) {
-  const names = [group.et, group.en, group.ru, ...group.exercises.flatMap((item) => [item.et, item.en, item.ru])]
-    .map((item) => item.toLowerCase())
-    .filter((item) => item.length > 2)
-  const choices = readChoices()
-  const today = new Date()
-  const hits = []
-  for (let offset = 0; offset < 7; offset += 1) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - offset)
-    const key = stamp(date)
-    const entry = choices[key]
-    const choice = typeof entry === 'string' ? entry : entry?.choice || ''
-    const note = typeof entry === 'object' && entry ? entry.gymNote || '' : ''
-    const extra = typeof entry === 'object' && entry ? `${entry.gym || ''} ${entry.extra || ''}` : ''
-    const blob = `${choice} ${note} ${extra}`.toLowerCase()
-    if (names.some((name) => blob.includes(name))) hits.push({ key, note: note || choice })
-  }
-  return hits
-}
-
-export function mountMuscle3d(root) {
+export function mountMuscle3d(root, initialGroup = '') {
   const canvas = root.querySelector('#muscle-canvas')
   const filters = root.querySelector('#muscle-filters')
-  const info = root.querySelector('#muscle-info')
+  const info = document.querySelector('#muscle-info')
   const status = root.querySelector('#muscle-status')
   const viewButtons = [...root.querySelectorAll('[data-view3]')]
   let running = false
-  let selectedGroup = ''
+  let selectedGroup = initialGroup
   let selectedLabel = ''
   let hovered = null
   const meshes = []
@@ -175,50 +131,27 @@ export function mountMuscle3d(root) {
     for (const exercise of group.exercises) {
       const button = document.createElement('button')
       button.type = 'button'
-      button.textContent = text(lang, exercise)
+      const match = findExercise(exercise.et)
+      if (match) {
+        const img = document.createElement('img')
+        img.src = `/exercises/${match.id}.jpg`
+        img.alt = ''
+        button.append(img)
+      } else {
+        const fallback = document.createElement('span')
+        fallback.className = 'muscle-exercise-fallback'
+        fallback.textContent = text(lang, exercise).slice(0, 1)
+        button.append(fallback)
+      }
+      const label = document.createElement('span')
+      label.textContent = text(lang, exercise)
+      button.append(label)
       button.addEventListener('click', () => {
         document.dispatchEvent(new CustomEvent('trennip-open-exercise', { detail: { name: exercise.et } }))
       })
       list.append(button)
     }
     info.append(exLabel, list)
-
-    const saved = readSavedMuscle(group.et)
-    if (saved?.exercises || saved?.reps) {
-      const savedLabel = document.createElement('p')
-      savedLabel.className = 'muscle-kicker'
-      savedLabel.textContent = lang === 'ru' ? 'Твои заметки' : lang === 'en' ? 'Your notes' : 'Sinu märkmed'
-      const savedText = document.createElement('p')
-      savedText.textContent = [saved.exercises, saved.reps].filter(Boolean).join(' · ')
-      info.append(savedLabel, savedText)
-    }
-
-    const hits = recentDays(group)
-    const recentLabel = document.createElement('p')
-    recentLabel.className = 'muscle-kicker'
-    recentLabel.textContent = lang === 'ru' ? 'Последние тренировки' : lang === 'en' ? 'Recent workouts' : 'Viimased treeningud'
-    const recent = document.createElement('div')
-    recent.className = 'muscle-recent'
-    if (!hits.length) {
-      const none = document.createElement('p')
-      none.textContent = lang === 'ru'
-        ? 'За 7 дней записей по этой мышце нет.'
-        : lang === 'en'
-          ? 'No entries for this muscle in the last 7 days.'
-          : 'Viimase 7 päeva jooksul ei ole selle lihase kohta kirjet.'
-      recent.append(none)
-    } else {
-      for (const hit of hits) {
-        const line = document.createElement('p')
-        line.textContent = `${hit.key.slice(8)}.${hit.key.slice(5, 7)} · ${hit.note}`
-        recent.append(line)
-      }
-    }
-    const load = document.createElement('p')
-    load.className = 'muscle-load'
-    const loadWord = lang === 'ru' ? 'Нагрузка за 7 дней' : lang === 'en' ? 'Load over 7 days' : 'Koormus 7 päeva jooksul'
-    load.textContent = `${loadWord}: ${hits.length}/7`
-    info.append(recentLabel, recent, load)
     info.hidden = false
   }
 
@@ -243,22 +176,25 @@ export function mountMuscle3d(root) {
     }
   }
 
+  function showSelection() {
+    paint()
+    renderFilters()
+    renderInfo()
+    if (selectedGroup) info.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   function selectGroup(id) {
     selectedGroup = id
     selectedLabel = ''
     const group = muscleGroup(id)
     if (group) goView(group.view)
-    paint()
-    renderFilters()
-    renderInfo()
+    showSelection()
   }
 
   function selectMesh(mesh) {
     selectedGroup = mesh.userData.group || ''
     selectedLabel = mesh.userData.label || ''
-    paint()
-    renderFilters()
-    renderInfo()
+    showSelection()
   }
 
   filters.addEventListener('click', (event) => {
@@ -349,6 +285,8 @@ export function mountMuscle3d(root) {
     running = false
   }
 
+  renderFilters()
+  renderInfo()
   status.hidden = false
   const draco = new DRACOLoader()
   draco.setDecoderPath('/draco/')
@@ -376,7 +314,8 @@ export function mountMuscle3d(root) {
       paint()
       renderFilters()
       renderInfo()
-      goView('front')
+      const group = muscleGroup(selectedGroup)
+      goView(group ? group.view : 'front')
       resize()
     },
     undefined,
@@ -391,5 +330,5 @@ export function mountMuscle3d(root) {
     else stop()
   })
 
-  return { start, stop }
+  return { start, stop, selectGroup }
 }

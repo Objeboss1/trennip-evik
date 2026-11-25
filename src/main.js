@@ -2,6 +2,7 @@ import './style.css'
 import sharedDiary from './shared-diary.json'
 import { applyLanguage, getLang, months, setLang, t, weekdays } from './i18n.js'
 import { EXERCISES, EXERCISE_GROUPS, exerciseById, findExercise } from './exercises.js'
+import { MUSCLE_GROUPS } from './muscle-data.js'
 import { FOODS, foodById } from './foods.js'
 
 const CHOICE_KEYS = {
@@ -17,8 +18,6 @@ const STORAGE_KEY = 'treeningpaevik'
 const monthLabel = document.querySelector('#month-label')
 const days = document.querySelector('#days')
 const calendar = document.querySelector('#calendar')
-const bodyViews = document.querySelector('.body-views')
-const muscleView = document.querySelector('#muscle')
 const dayView = document.querySelector('#day')
 const dayLabel = document.querySelector('#day-label')
 const daySummary = document.querySelector('#day-summary')
@@ -223,7 +222,6 @@ function showView(name) {
 
 function showCalendar() {
   dayView.hidden = true
-  muscleView.hidden = true
   showView('calendar')
 }
 
@@ -281,12 +279,7 @@ function beginDayEdit() {
 }
 
 const MUSCLE_KEY = 'treeningpaevik-lihased'
-const muscleTitle = document.querySelector('#muscle-title')
-const muscleExercises = document.querySelector('#muscle-exercises')
-const muscleReps = document.querySelector('#muscle-reps')
 let muscles = {}
-let openMuscle = ''
-let openSpot = null
 
 function loadMuscles() {
   try {
@@ -295,30 +288,6 @@ function loadMuscles() {
   } catch {
     return {}
   }
-}
-
-function saveOpenMuscle() {
-  if (!openSpot) return
-  renameSpot(openSpot, muscleTitle.value)
-  openMuscle = openSpot.dataset.muscle
-  muscles[openMuscle] = {
-    exercises: muscleExercises.value,
-    reps: muscleReps.value,
-  }
-  localStorage.setItem(MUSCLE_KEY, JSON.stringify(muscles))
-  localStorage.setItem(LAYOUT_KEY, JSON.stringify({ spots: collectSpots() }))
-  pushDiary()
-}
-
-function showMuscle(spot) {
-  saveOpenMuscle()
-  openSpot = spot
-  openMuscle = spot.dataset.muscle
-  const entry = muscles[openMuscle] || { exercises: '', reps: '' }
-  muscleTitle.value = openMuscle
-  muscleExercises.value = entry.exercises || ''
-  muscleReps.value = entry.reps || ''
-  muscleView.hidden = false
 }
 
 document.querySelector('[data-nav="prev"]').addEventListener('click', () => {
@@ -546,14 +515,7 @@ function renderStats() {
 
 muscles = loadMuscles()
 
-const SPOT_KEY = 'treeningpaevik-kohad'
 const LAYOUT_KEY = 'treeningpaevik-paigutus'
-const editSpotsButton = document.querySelector('#edit-spots')
-const spotTools = document.querySelector('#spot-tools')
-const saveSpotsButton = document.querySelector('#save-spots')
-const spotView = document.querySelector('#spot-view')
-let movingSpots = false
-let spotMoved = false
 
 function loadJson(key) {
   try {
@@ -563,150 +525,7 @@ function loadJson(key) {
   }
 }
 
-function makeSpot({ id, muscle, top, left }) {
-  const button = document.createElement('button')
-  button.type = 'button'
-  button.className = 'spot'
-  button.dataset.spot = id
-  button.dataset.muscle = muscle
-  button.title = muscle
-  button.setAttribute('aria-label', muscle)
-  button.style.top = top
-  button.style.left = left
-  return button
-}
-
-function collectSpots() {
-  return [...document.querySelectorAll('.spot')].map((spot) => ({
-    id: spot.dataset.spot,
-    muscle: spot.dataset.muscle,
-    view: spot.closest('.shot').dataset.view,
-    top: spot.style.top,
-    left: spot.style.left,
-  }))
-}
-
-function applySavedLayout() {
-  const layout = loadJson(LAYOUT_KEY)
-  if (layout?.spots?.length) {
-    document.querySelectorAll('.spot').forEach((spot) => spot.remove())
-    for (const spot of layout.spots) {
-      const shot = document.querySelector(`.shot[data-view="${spot.view}"]`)
-      if (shot) shot.append(makeSpot(spot))
-    }
-    return
-  }
-
-  const places = loadJson(SPOT_KEY) || {}
-  for (const spot of document.querySelectorAll('.spot')) {
-    const place = places[spot.dataset.spot]
-    if (!place) continue
-    spot.style.top = place.top
-    spot.style.left = place.left
-  }
-}
-
-function renameSpot(spot, name) {
-  const next = name.trim() || 'Uus'
-  const previous = spot.dataset.muscle
-  if (previous !== next) {
-    if (muscles[previous] && !muscles[next]) muscles[next] = { ...muscles[previous] }
-    localStorage.setItem(MUSCLE_KEY, JSON.stringify(muscles))
-  }
-  spot.dataset.muscle = next
-  spot.title = next
-  spot.setAttribute('aria-label', next)
-}
-
-function clampPercent(value) {
-  return Math.min(100, Math.max(0, value))
-}
-
-bodyViews.addEventListener('click', (event) => {
-  const button = event.target.closest('.spot')
-  if (!button || spotMoved) {
-    spotMoved = false
-    return
-  }
-  showMuscle(button)
-})
-
-bodyViews.addEventListener('pointerdown', (event) => {
-  const spot = event.target.closest('.spot')
-  if (!spot || !movingSpots) return
-  spotMoved = false
-  event.preventDefault()
-  spot.setPointerCapture(event.pointerId)
-  spot.dataset.dragging = 'true'
-})
-
-bodyViews.addEventListener('pointermove', (event) => {
-  const spot = event.target.closest('.spot')
-  if (!spot || spot.dataset.dragging !== 'true') return
-  spotMoved = true
-  const shot = spot.closest('.shot').getBoundingClientRect()
-  const left = ((event.clientX - shot.left) / shot.width) * 100
-  const top = ((event.clientY - shot.top) / shot.height) * 100
-  spot.style.left = `${clampPercent(left)}%`
-  spot.style.top = `${clampPercent(top)}%`
-})
-
-bodyViews.addEventListener('pointerup', (event) => {
-  const spot = event.target.closest('.spot')
-  if (!spot) return
-  delete spot.dataset.dragging
-})
-
-document.querySelector('#add-spot').addEventListener('click', () => {
-  const shot = document.querySelector(`.shot[data-view="${spotView.value}"]`)
-  const spot = makeSpot({
-    id: `ring-${Date.now()}`,
-    muscle: 'Uus',
-    top: '50%',
-    left: '50%',
-  })
-  shot.append(spot)
-  showMuscle(spot)
-})
-
-document.querySelector('#delete-open-spot').addEventListener('click', () => {
-  if (!openSpot) return
-  openSpot.remove()
-  openSpot = null
-  openMuscle = ''
-  localStorage.setItem(LAYOUT_KEY, JSON.stringify({ spots: collectSpots() }))
-  pushDiary()
-  muscleView.hidden = true
-})
-
-editSpotsButton.addEventListener('click', () => {
-  movingSpots = true
-  document.body.classList.add('moving-spots')
-  editSpotsButton.hidden = true
-  spotTools.hidden = false
-  muscleView.hidden = true
-})
-
-saveSpotsButton.addEventListener('click', () => {
-  saveOpenMuscle()
-  localStorage.setItem(LAYOUT_KEY, JSON.stringify({ spots: collectSpots() }))
-  pushDiary()
-  movingSpots = false
-  document.body.classList.remove('moving-spots')
-  spotTools.hidden = true
-  editSpotsButton.hidden = false
-})
-
-document.querySelector('#muscle-back').addEventListener('click', () => {
-  saveOpenMuscle()
-  openSpot = null
-  openMuscle = ''
-  muscleView.hidden = true
-})
-
-muscleTitle.addEventListener('input', saveOpenMuscle)
-muscleExercises.addEventListener('input', saveOpenMuscle)
-muscleReps.addEventListener('input', saveOpenMuscle)
+function applySavedLayout() {}
 
 const PLAN_KEY = 'treeningpaevik-kava'
 const planPanel = document.querySelector('#plan-panel')
@@ -734,6 +553,10 @@ let selectedDay = todayPlanDay()
 let pickerGroup = ''
 let detailExercise = null
 let detailInfoOnly = false
+let pendingExercise = null
+const planPlace = document.querySelector('#plan-place')
+const planPlacePhoto = document.querySelector('#plan-place-photo')
+const planPlaceName = document.querySelector('#plan-place-name')
 
 function emptyPlan() {
   return { v: 2, days: Object.fromEntries(PLAN_DAYS.map((day) => [day, []])) }
@@ -801,16 +624,42 @@ function countField(label, value, onInput) {
   return wrap
 }
 
+function placePending(day) {
+  if (!pendingExercise) return -1
+  const list = planCellsData.days[day]
+  const match = pendingExercise.id ? pendingExercise : null
+  const name = pendingExercise.et || pendingExercise.name || ''
+  let index = list.findIndex((item) => (match ? item.id === match.id : item.name?.toLowerCase() === name.toLowerCase()))
+  if (index < 0) {
+    list.push(match ? { id: match.id, sets: '', reps: '' } : { name, sets: '', reps: '' })
+    index = list.length - 1
+    savePlan()
+  }
+  pendingExercise = null
+  return index
+}
+
 function renderPlan() {
   const today = todayPlanDay()
   const shorts = PLAN_SHORT[getLang()] || PLAN_SHORT.et
+  planPlace.hidden = !pendingExercise
+  planDays.classList.toggle('is-placing', Boolean(pendingExercise))
+  if (pendingExercise) {
+    const photo = pendingExercise.id ? `/exercises/${pendingExercise.id}.jpg` : ''
+    planPlacePhoto.hidden = !photo
+    if (photo) {
+      planPlacePhoto.src = photo
+      planPlacePhoto.alt = exerciseLabel(pendingExercise)
+    }
+    planPlaceName.textContent = pendingExercise.id ? exerciseLabel(pendingExercise) : pendingExercise.name
+  }
   planDays.replaceChildren()
   for (const day of PLAN_DAYS) {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'plan-day'
     if (day === today) button.classList.add('is-today')
-    button.setAttribute('aria-pressed', String(day === selectedDay))
+    button.setAttribute('aria-pressed', String(day === selectedDay && !pendingExercise))
     const full = document.createElement('span')
     full.className = 'plan-day-name'
     full.textContent = t(day)
@@ -820,7 +669,13 @@ function renderPlan() {
     button.append(full, short)
     button.addEventListener('click', () => {
       selectedDay = day
+      const placedIndex = placePending(day)
       renderPlan()
+      if (placedIndex >= 0) {
+        const card = planList.querySelectorAll('.plan-card')[placedIndex]
+        card?.scrollIntoView({ block: 'center' })
+        card?.querySelector('input')?.focus()
+      }
     })
     planDays.append(button)
   }
@@ -1007,46 +862,102 @@ document.addEventListener('keydown', (event) => {
 })
 
 let muscle3d = null
-document.querySelector('.muscle-mode').addEventListener('click', async (event) => {
-  const button = event.target.closest('[data-muscle-mode]')
-  if (!button) return
-  const mode = button.dataset.muscleMode
-  document.querySelector('.body-views').hidden = mode === '3d'
-  document.querySelector('.spot-edit').hidden = mode === '3d'
+let muscle3dLoading = null
+let pendingGroup = ''
+
+function paintMuscleFilters(selected = pendingGroup) {
+  const filters = document.querySelector('#muscle-filters')
+  const lang = getLang()
+  filters.replaceChildren()
+  const all = document.createElement('button')
+  all.type = 'button'
+  all.dataset.group = ''
+  all.textContent = lang === 'ru' ? 'Все' : lang === 'en' ? 'All' : 'Kõik'
+  all.setAttribute('aria-pressed', String(!selected))
+  filters.append(all)
+  for (const group of MUSCLE_GROUPS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset.group = group.id
+    button.textContent = group[lang] || group.et
+    button.setAttribute('aria-pressed', String(group.id === selected))
+    filters.append(button)
+  }
+}
+
+paintMuscleFilters()
+document.querySelector('#muscle-filters').addEventListener('click', (event) => {
+  const button = event.target.closest('button')
+  if (!button || muscle3d) return
+  pendingGroup = button.dataset.group || ''
+  paintMuscleFilters()
+})
+const muscleCredit = document.querySelector('#muscle-credit')
+const muscleCreditOpen = document.querySelector('#muscle-credit-open')
+function fitMuscleStage() {
+  const stage = document.querySelector('.muscle-stage')
+  const section = document.querySelector('[data-section="muscles"]')
+  if (!stage || section.hidden) return
+  const barTop = document.querySelector('.tab-bar').getBoundingClientRect().top
+  const sourceHeight = document.querySelector('.muscle-source').getBoundingClientRect().height
+  const top = stage.getBoundingClientRect().top
+  if (top < 0) return
+  const height = Math.max(260, Math.floor(barTop - top - sourceHeight - 28))
+  stage.style.height = `${height}px`
+}
+
+muscleCreditOpen.addEventListener('click', () => {
+  const open = muscleCredit.hidden
+  muscleCredit.hidden = !open
+  muscleCreditOpen.setAttribute('aria-expanded', String(open))
+  requestAnimationFrame(fitMuscleStage)
+})
+
+async function ensureMuscle3d() {
   const view = document.querySelector('#muscle-3d')
-  view.hidden = mode !== '3d'
-  for (const item of document.querySelectorAll('[data-muscle-mode]')) {
-    item.setAttribute('aria-pressed', String(item === button))
-  }
-  if (mode !== '3d') {
-    muscle3d?.stop()
-    return
-  }
   if (!muscle3d) {
-    const mod = await import('./muscle3d.js')
-    muscle3d = mod.mountMuscle3d(view)
+    if (!muscle3dLoading) {
+      muscle3dLoading = import('./muscle3d.js').then((mod) => {
+        muscle3d = mod.mountMuscle3d(view, pendingGroup)
+        return muscle3d
+      })
+    }
+    await muscle3dLoading
   }
-  muscle3d.start()
+  if (pendingGroup) {
+    muscle3d.selectGroup(pendingGroup)
+    pendingGroup = ''
+  }
+  const section = document.querySelector('[data-section="muscles"]')
+  if (section.hidden) muscle3d.stop()
+  else muscle3d.start()
+}
+
+document.addEventListener('trennip-view', (event) => {
+  if (event.detail === 'muscles') {
+    window.scrollTo(0, 0)
+    requestAnimationFrame(() => {
+      fitMuscleStage()
+      ensureMuscle3d()
+    })
+  } else muscle3d?.stop()
+})
+
+window.addEventListener('resize', () => {
+  if (!document.querySelector('[data-section="muscles"]').hidden) fitMuscleStage()
+})
+
+document.querySelector('#plan-place-cancel').addEventListener('click', () => {
+  pendingExercise = null
+  renderPlan()
 })
 
 document.addEventListener('trennip-open-exercise', (event) => {
   const name = String(event.detail?.name || '').trim()
   if (!name) return
-  selectedDay = todayPlanDay()
-  const match = findExercise(name)
-  const list = planCellsData.days[selectedDay]
-  let index = list.findIndex((item) => (match ? item.id === match.id : item.name?.toLowerCase() === name.toLowerCase()))
-  if (index < 0) {
-    list.push(match ? { id: match.id, sets: '', reps: '' } : { name, sets: '', reps: '' })
-    index = list.length - 1
-    savePlan()
-  }
+  pendingExercise = findExercise(name) || { name }
   showView('plan')
-  requestAnimationFrame(() => {
-    const card = planList.querySelectorAll('.plan-card')[index]
-    card?.scrollIntoView({ block: 'center' })
-    card?.querySelector('input')?.focus()
-  })
+  requestAnimationFrame(() => planPlace.scrollIntoView({ block: 'center' }))
 })
 
 const goal = document.querySelector('#goal')
@@ -1531,6 +1442,7 @@ function refreshLanguage() {
   }
   if (!document.querySelector('[data-section="records"]').hidden) renderStats()
   if (!document.querySelector('[data-section="plan"]').hidden) renderPlan()
+  if (!muscle3d) paintMuscleFilters()
   renderNutrition()
   renderAccount()
   markLanguage()
@@ -1709,6 +1621,7 @@ document.querySelector('#account-logout').addEventListener('click', () => {
 
 setLang(localStorage.getItem(LANG_KEY) || 'et')
 applyLanguage()
+paintMuscleFilters()
 applyShortDays()
 applyTheme(localStorage.getItem(THEME_KEY) || 'lime')
 markLanguage()
