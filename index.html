@@ -14,6 +14,7 @@
     <div class="account-corner">
       <div class="account-actions">
         <button type="button" id="settings-open" data-i18n="settings">Sätted</button>
+        <button type="button" id="week-open" data-i18n="thisWeek">See nädal</button>
         <button type="button" id="account-open">Logi sisse</button>
       </div>
       <div id="account-panel" class="account-panel" hidden>
@@ -175,6 +176,20 @@
           <p data-i18n="infoColors"></p>
           </div>
         </div>
+      </div>
+    </section>
+    <section id="week" class="modal" hidden>
+      <div class="modal-card week-card">
+        <button type="button" class="back" id="week-close" data-i18n="close">Sulge</button>
+        <div class="week-nav">
+          <button type="button" id="week-prev" aria-label="Eelmine nädal">‹</button>
+          <div class="week-title">
+            <h2 id="week-label">See nädal</h2>
+            <p id="week-range"></p>
+          </div>
+          <button type="button" id="week-next" aria-label="Järgmine nädal">›</button>
+        </div>
+        <div id="week-body"></div>
       </div>
     </section>
     <main>
@@ -399,7 +414,7 @@
       </section>
       <section class="panel" data-section="goals" hidden>
         <h2 class="muscles-title" data-i18n="goals">Eesmärgid</h2>
-        <p class="goal-hint" data-i18n="goalsHint">Lülita sisse, mida tahad jälgida. Uni ja vesi tuleb ise kirjutada. Kalorid, jooks ja jõusaal tulevad päevikust.</p>
+        <p class="goal-hint" data-i18n="goalsHint">Lülita sisse, mida tahad jälgida. Jooksu ja jõusaali kordi märgid nädala ribal ise.</p>
         <div id="goal-board" class="goal-board"></div>
         <label class="goal">
           <span data-i18n="goalNote">Oma märge</span>
